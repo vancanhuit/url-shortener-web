@@ -14,20 +14,6 @@ env:
 jobs:
   go-check:
     runs-on: ubuntu-latest
-    services:
-      db:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: secret
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd 'pg_isready -U postgres -d postgres'
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -41,9 +27,9 @@ jobs:
         run: go mod tidy
 
       - name: Run tests
-        run: go test -v -cover ./...
-        env:
-          TEST_DB_DSN: postgres://postgres:secret@localhost:5432/postgres?sslmode=disable
+        run: |
+          source ./scripts/run-testdb.sh
+          go test -v -cover ./...
 
       - name: Run Go build
         run: go build -o bin/url-shortener ./cmd/web

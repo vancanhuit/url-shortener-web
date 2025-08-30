@@ -9,6 +9,10 @@ port="$(docker container port \
                                 -e POSTGRES_PASSWORD=secret \
                                 -e POSTGRES_DB=postgres \
                                 -e POSTGRES_USER=postgres \
+                                --health-cmd 'pg_isready -U postgres -d postgres' \
+                                --health-interval 10s \
+                                --health-timeout 5s \
+                                --health-retries 5 \
                                 -p 0.0.0.0:0:5432 postgres:17)" 5432 \
                                 | head -1 | sed 's/.*:\([0-9]*\)/\1/')"
 
