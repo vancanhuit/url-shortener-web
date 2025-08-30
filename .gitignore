@@ -6,7 +6,6 @@
 
 # Ignore everything
 *
-
 # But not these files...
 !/.gitignore
 
@@ -15,12 +14,16 @@
 !go.mod
 
 !README.md
-!LICENSE
-
-# !Makefile
 
 # ...even if they are in subdirectories
 !*/
 !migrations/*.sql
 !scripts/*.sh
+!templates/html/*.html
+!templates/css/*.css
 !.github/workflows/*.yaml
+!package.json
+!package-lock.json
+!.gitkeep
+!.editorconfig
+node_modules/*

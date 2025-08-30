@@ -23,15 +23,25 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Install dependencies
-        run: go mod tidy
+        run: |
+            go mod tidy
+            npm install
+
+      - name: Build Tailwind CSS
+        run: npm run build:css
 
       - name: Run tests
         run: |
           source ./scripts/run-testdb.sh
           go test -v -cover ./...
 
-      - name: Run Go build
+      - name: Run build
         run: go build -o bin/url-shortener ./cmd/web
 
       - name: Run golangci-lint

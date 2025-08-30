@@ -8,6 +8,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func (app *Application) Index(c echo.Context) error {
+	return c.Render(http.StatusOK, "index.html", nil)
+}
+
 func (app *Application) Shorten(c echo.Context) error {
 	var request struct {
 		URL string `json:"url" validate:"required,http_url,max=500"`

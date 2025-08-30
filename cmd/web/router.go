@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html/template"
 	"log/slog"
 	"net/http"
 	"reflect"
@@ -10,6 +11,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/vancanhuit/url-shortener-web/assets"
+	"github.com/vancanhuit/url-shortener-web/templates"
 	"golang.org/x/time/rate"
 )
 
@@ -28,6 +31,10 @@ func (app *Application) Router() http.Handler {
 		return name
 	})
 	e.Validator = &CustomValidator{Validator: validate}
+
+	e.Renderer = &Template{
+		templates: template.Must(template.ParseFS(templates.FS, "html/*.html")),
+	}
 
 	e.Use(middleware.RequestID())
 	e.Use(middleware.ContextTimeout(60 * time.Second))
@@ -78,8 +85,11 @@ func (app *Application) Router() http.Handler {
 		},
 	}))
 
+	e.StaticFS("/static", echo.MustSubFS(assets.FS, "."))
+
 	e.POST("/api/shorten", app.Shorten)
 	e.GET("/r/:alias", app.Redirect)
+	e.GET("/", app.Index)
 
 	return e
 }

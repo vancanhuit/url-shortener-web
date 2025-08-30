@@ -154,11 +154,7 @@ func TestAPIWithInvalidInput(t *testing.T) {
 	// Setup test server
 	app := newTestApp(t)
 
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
+	client := &http.Client{}
 
 	b := make([]byte, 1024*1024)
 	_, err := rand.Read(b)
@@ -255,4 +251,18 @@ func TestAPIWithInvalidInput(t *testing.T) {
 			require.Equal(t, tc.errorMsg, response.Error)
 		})
 	}
+}
+
+func TestWebIndex(t *testing.T) {
+	// Setup test server
+	app := newTestApp(t)
+
+	client := &http.Client{}
+
+	resp, err := client.Get(app.BaseURL + "/")
+	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "text/html; charset=UTF-8", resp.Header.Get(echo.HeaderContentType))
 }
