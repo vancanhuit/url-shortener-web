@@ -57,7 +57,7 @@ func main() {
 	}
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		app.Logger.Error("failed to start HTTP server", "error", err)
+		app.Logger.Error("failed to start http server", "error", err)
 		os.Exit(1)
 	}
 	app.Logger.Info("http server started", "port", port, "base_url", baseURL)

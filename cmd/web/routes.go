@@ -1,15 +1,16 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/time/rate"
 )
 
 func (app *Application) routes() http.Handler {
@@ -29,6 +30,7 @@ func (app *Application) routes() http.Handler {
 	e.Validator = &CustomValidator{Validator: validate}
 
 	e.Use(middleware.RequestID())
+	e.Use(middleware.ContextTimeout(60 * time.Second))
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:       true,
 		LogStatus:    true,
@@ -41,7 +43,7 @@ func (app *Application) routes() http.Handler {
 		LogUserAgent: true,
 		HandleError:  true,
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			app.Logger.LogAttrs(context.Background(), slog.LevelInfo, "REQUEST",
+			app.Logger.LogAttrs(c.Request().Context(), slog.LevelInfo, "REQUEST",
 				slog.String("method", v.Method),
 				slog.String("uri", v.URI),
 				slog.Int("status", v.Status),
@@ -57,6 +59,24 @@ func (app *Application) routes() http.Handler {
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.BodyLimit("1M"))
+	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Skipper: middleware.DefaultSkipper,
+		Store: middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+			Rate:      rate.Limit(100),
+			Burst:     200,
+			ExpiresIn: 1 * time.Minute,
+		}),
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			ip := c.RealIP()
+			return ip, nil
+		},
+		DenyHandler: func(c echo.Context, identifier string, err error) error {
+			return echo.NewHTTPError(http.StatusTooManyRequests, "too many requests")
+		},
+		ErrorHandler: func(c echo.Context, err error) error {
+			return echo.NewHTTPError(http.StatusForbidden, "forbidden")
+		},
+	}))
 
 	e.POST("/api/shorten", app.Shorten)
 	e.GET("/r/:alias", app.Redirect)
