@@ -21,11 +21,12 @@ export TEST_DB_DSN
 
 echo "waiting for test database to be ready..."
 
-while true; do
+count=10
+for i in $(seq 1 ${count}); do
     health_status=$(docker container inspect test_postgres -f '{{.State.Health.Status}}')
     [[ ${health_status} == "healthy" ]] && break
-    echo "not ready"
-    sleep 1
+    echo "not ready (${i}/${count})"
+    sleep 5
 done
 
 echo "test database is ready"
