@@ -3,13 +3,13 @@ name: Go
 on:
   push:
     branches:
-      - main
+      - 'main'
   pull_request:
     branches:
-      - main
+      - 'main'
 
 env:
-    GO_VERSION: 1.25.0
+  GO_VERSION: 1.25.0
 
 jobs:
   go-check:
