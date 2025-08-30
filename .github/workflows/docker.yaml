@@ -63,3 +63,4 @@ jobs:
         with:
           name: image
           path: /tmp/image.tar
+          compression-level: 0
