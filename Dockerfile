@@ -10,7 +10,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY --from=tailwind /app/assets/css/tailwind.css ./app/assets/css/
+COPY --from=tailwind /app/assets/css/tailwind.css ./assets/css/
 RUN go build -o bin/url-shortener ./cmd/web
 
 FROM gcr.io/distroless/base-debian12:latest

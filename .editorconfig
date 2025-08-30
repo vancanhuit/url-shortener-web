@@ -10,5 +10,5 @@ insert_final_newline = true
 [*.{go,mode}]
 indent_style = tab
 
-[*.{html,css,js}]
+[*.{html,css,js,yaml,yml}]
 indent_size = 2
