@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
 	"reflect"
 	"strings"
@@ -27,9 +29,34 @@ func (app *Application) routes() http.Handler {
 	e.Validator = &CustomValidator{Validator: validate}
 
 	e.Use(middleware.RequestID())
-	e.Use(middleware.BodyLimit("1M"))
-	e.Use(middleware.Logger())
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:       true,
+		LogStatus:    true,
+		LogLatency:   true,
+		LogProtocol:  true,
+		LogRemoteIP:  true,
+		LogHost:      true,
+		LogMethod:    true,
+		LogRequestID: true,
+		LogUserAgent: true,
+		HandleError:  true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			app.Logger.LogAttrs(context.Background(), slog.LevelInfo, "REQUEST",
+				slog.String("method", v.Method),
+				slog.String("uri", v.URI),
+				slog.Int("status", v.Status),
+				slog.String("protocol", v.Protocol),
+				slog.String("remote_ip", v.RemoteIP),
+				slog.String("host", v.Host),
+				slog.String("user_agent", v.UserAgent),
+				slog.String("request_id", v.RequestID),
+				slog.String("latency", v.Latency.String()),
+			)
+			return nil
+		},
+	}))
 	e.Use(middleware.Recover())
+	e.Use(middleware.BodyLimit("1M"))
 
 	e.POST("/api/shorten", app.Shorten)
 	e.GET("/r/:alias", app.Redirect)
