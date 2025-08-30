@@ -18,14 +18,14 @@ func (cv *CustomValidator) Validate(i any) error {
 		}
 
 		e := err.(validator.ValidationErrors)[0]
-		if e.Tag() == "required" {
-			return fmt.Errorf("'%s' is required", e.Field())
+		if e.Tag() == "required" && e.Field() == "URL" {
+			return fmt.Errorf("missing url")
 		}
 		if e.Tag() == "http_url" {
-			return fmt.Errorf("'%s' must be a valid HTTP(S) URL", e.Field())
+			return fmt.Errorf("must be a valid HTTP(S) URL")
 		}
 		if e.Tag() == "max" {
-			return fmt.Errorf("'%s' must be at most %s characters long", e.Field(), e.Param())
+			return fmt.Errorf("must be at most %s characters long", e.Param())
 		}
 
 		return fmt.Errorf("validation failed for '%s': %s", e.Field(), e.Tag())

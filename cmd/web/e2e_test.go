@@ -209,21 +209,21 @@ func TestAPIWithInvalidInput(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 		},
 		{
-			name:       "missing input",
+			name:       "missing url",
 			payload:    `{}`,
-			errorMsg:   "'url' is required",
+			errorMsg:   "missing url",
 			statusCode: http.StatusUnprocessableEntity,
 		},
 		{
 			name:       "invalid URL",
 			payload:    `{"url": "invalid-url"}`,
-			errorMsg:   "'url' must be a valid HTTP(S) URL",
+			errorMsg:   "must be a valid HTTP(S) URL",
 			statusCode: http.StatusUnprocessableEntity,
 		},
 		{
 			name:       "more than 500 bytes long",
 			payload:    fmt.Sprintf(`{"url": "http://%x"}`, b[:500]),
-			errorMsg:   "'url' must be at most 500 characters long",
+			errorMsg:   "must be at most 500 characters long",
 			statusCode: http.StatusUnprocessableEntity,
 		},
 		{

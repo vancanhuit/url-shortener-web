@@ -4,8 +4,6 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -22,15 +20,9 @@ func (app *Application) Router() http.Handler {
 	e.JSONSerializer = &CustomJSONSerializer{}
 	e.HTTPErrorHandler = app.CustomHTTPErrorHandler
 
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		if name == "-" {
-			return ""
-		}
-		return name
-	})
-	e.Validator = &CustomValidator{Validator: validate}
+	e.Validator = &CustomValidator{
+		Validator: validator.New(validator.WithRequiredStructEnabled()),
+	}
 
 	e.Renderer = &Template{
 		templates: template.Must(template.ParseFS(templates.FS, "html/*.html")),

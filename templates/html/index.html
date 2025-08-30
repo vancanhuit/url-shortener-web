@@ -43,12 +43,12 @@
       });
       const data = await response.json();
       if (response.ok && data.short_url) {
-        resultDiv.innerHTML = `<span class="text-green-600">Short URL: <a href="${data.short_url}" class="underline">${data.short_url}</a></span>`;
+        resultDiv.innerHTML = `<span class="text-green-600">Short URL: <a href="${data.short_url}" class="underline text-blue-600 hover:text-blue-800 font-semibold transition" target="_blank" rel="noopener">${data.short_url}</a></span>`;
       } else {
-        resultDiv.innerHTML = `<span class="text-red-600">Error: ${data.error || 'Failed to shorten URL.'}</span>`;
+        resultDiv.innerHTML = `<span class="text-red-600 bg-red-100 border border-red-300 rounded px-4 py-2 inline-block mt-2 font-medium">${data.error || 'Failed to shorten URL.'}</span>`;
       }
     } catch (err) {
-      resultDiv.innerHTML = `<span class="text-red-600">Error: ${err.message}</span>`;
+      resultDiv.innerHTML = `<span class="text-red-600 bg-red-100 border border-red-300 rounded px-4 py-2 inline-block mt-2 font-medium">${err.message}</span>`;
     }
     });
   </script>
