@@ -30,7 +30,7 @@ func main() {
 		Logger:  slog.New(slog.NewJSONHandler(os.Stdout, nil)),
 	}
 
-	db, err := openDB(dsn)
+	db, err := OpenDB(dsn)
 	if err != nil {
 		app.Logger.Error("failed to open database connection pool", "error", err)
 		os.Exit(1)
@@ -41,7 +41,7 @@ func main() {
 		}
 	}()
 
-	if err := migrate(db); err != nil {
+	if err := Migrate(db); err != nil {
 		app.Logger.Error("failed to migrate database", "error", err)
 		os.Exit(1)
 	}
@@ -50,7 +50,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
-		Handler:      app.routes(),
+		Handler:      app.Router(),
 		IdleTimeout:  60 * time.Second,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 15 * time.Second,

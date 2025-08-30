@@ -13,7 +13,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func (app *Application) routes() http.Handler {
+func (app *Application) Router() http.Handler {
 	e := echo.New()
 
 	e.JSONSerializer = &CustomJSONSerializer{}

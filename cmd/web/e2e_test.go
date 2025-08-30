@@ -26,7 +26,7 @@ func randomDBName() string {
 func createTestDB(t *testing.T, dbName string) string {
 	t.Helper()
 	dsn := os.Getenv("TEST_DB_DSN")
-	db, err := openDB(dsn)
+	db, err := OpenDB(dsn)
 	require.NoError(t, err)
 
 	_, err = db.Exec("CREATE DATABASE " + dbName)
@@ -51,9 +51,9 @@ func newTestApp(t *testing.T) *Application {
 	t.Helper()
 	dbName := randomDBName()
 	dsn := createTestDB(t, dbName)
-	db, err := openDB(dsn)
+	db, err := OpenDB(dsn)
 	require.NoError(t, err)
-	err = migrate(db)
+	err = Migrate(db)
 	require.NoError(t, err)
 
 	app := &Application{
@@ -63,7 +63,7 @@ func newTestApp(t *testing.T) *Application {
 		Logger: slog.New(slog.DiscardHandler),
 	}
 
-	server := httptest.NewServer(app.routes())
+	server := httptest.NewServer(app.Router())
 	app.BaseURL = server.URL
 
 	t.Cleanup(func() {
@@ -84,7 +84,8 @@ func TestAPIWithValidInput(t *testing.T) {
 	}
 
 	// Test shortening a URL
-	resp, err := client.Post(app.BaseURL+"/api/shorten", echo.MIMEApplicationJSON, bytes.NewBufferString(`{"url":"http://example.com"}`))
+	url := "https://example.com"
+	resp, err := client.Post(app.BaseURL+"/api/shorten", echo.MIMEApplicationJSON, bytes.NewBufferString(fmt.Sprintf(`{"url":"%s"}`, url)))
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck
 
@@ -107,12 +108,12 @@ func TestAPIWithValidInput(t *testing.T) {
 	defer resp.Body.Close() //nolint:errcheck
 
 	require.Equal(t, http.StatusSeeOther, resp.StatusCode)
-	require.Equal(t, "http://example.com", resp.Header.Get("Location"))
+	require.Equal(t, url, resp.Header.Get("Location"))
 
 	alias := response.Alias
 
 	// Test existing URL
-	resp, err = client.Post(app.BaseURL+"/api/shorten", echo.MIMEApplicationJSON, bytes.NewBufferString(`{"url":"http://example.com"}`))
+	resp, err = client.Post(app.BaseURL+"/api/shorten", echo.MIMEApplicationJSON, bytes.NewBufferString(fmt.Sprintf(`{"url":"%s"}`, url)))
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck
 
