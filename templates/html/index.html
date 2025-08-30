@@ -1,55 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="/static/css/tailwind.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="/static/css/tailwind.css" rel="stylesheet"/>
   <title>URL Shortener</title>
-</head>
 
-<body>
-  <!-- Responsive URL Shortener UI with Tailwind CSS -->
-  <header class="bg-gray-800 text-white p-4">
-    <h1 class="text-center text-2xl sm:text-3xl md:text-4xl font-bold">URL Shortener</h1>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+  <!-- Header -->
+  <header class="bg-slate-900 text-white py-4">
+    <div class="max-w-3xl mx-auto px-4">
+      <h1 class="text-center text-2xl sm:text-3xl md:text-4xl font-bold">URL Shortener</h1>
+    </div>
   </header>
 
-  <main class="flex flex-col items-center justify-center min-h-[60vh] p-4">
-    <form id="shorten-form" class="w-full max-w-xl flex flex-col sm:flex-row gap-2">
-      <input type="url" name="url" id="url-input" placeholder="Enter your URL" class="flex-1 p-3 border border-gray-300 rounded sm:rounded-l focus:outline-none focus:ring-2 focus:ring-blue-400" required>
-      <button type="submit" class="bg-blue-500 hover:bg-blue-600 transition text-white p-3 rounded sm:rounded-r font-semibold">Shorten</button>
+  <!-- Main -->
+  <main class="flex-1 max-w-5xl mx-auto px-4 py-10">
+    <!-- Alerts (ARIA live region) -->
+    <div id="alert" class="hidden mb-4 rounded-xl border px-4 py-3 text-sm" role="alert" aria-live="assertive"></div>
+
+    <!-- Form -->
+    <form id="form" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 md:p-8 grid gap-3 w-full max-w-5xl mx-auto">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input id="url" name="url" type="url" inputmode="url" autocomplete="off" required placeholder="https://example.com/very/long/url" class="w-full flex-1 min-w-0 rounded-2xl border border-slate-300 px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button id="submit" type="submit" class="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-blue-600 text-white px-5 py-3 text-base font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+          <span id="btn-text">Shorten</span>
+          <span id="btn-spinner" class="ml-2 hidden h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent"></span>
+        </button>
+      </div>
     </form>
-    <div id="result" class="mt-6 w-full max-w-xl text-center"></div>
+
+    <!-- Result -->
+    <section id="result" class="hidden mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5" aria-live="polite">
+      <h2 class="text-sm text-slate-600">Your short link</h2>
+      <div class="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+        <a id="short-url" href="#" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-700 hover:underline break-all"></a>
+        <div class="flex items-center gap-2">
+          <button id="copy" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs hover:bg-slate-50">Copy</button>
+          <a id="open" href="#" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs hover:bg-slate-50">Open</a>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <footer class="bg-gray-800 text-white p-4 flex justify-center fixed bottom-0 left-0 w-full">
-    <p class="text-gray-400 text-xs sm:text-sm md:text-base text-center w-full">
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-white py-4 mt-auto">
+    <div class="max-w-3xl mx-auto px-4 text-center text-xs sm:text-sm text-slate-300">
       &copy; <span id="year"></span>
-    </p>
+    </div>
   </footer>
 
   <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-    document.getElementById('shorten-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const url = document.getElementById('url-input').value;
-    const resultDiv = document.getElementById('result');
-    resultDiv.textContent = '';
-    try {
-      const response = await fetch('/api/shorten', {
+    // ======= Utils =======
+    const $ = (sel) => document.querySelector(sel);
+    function setAlert(message, type = 'error') {
+      const box = $('#alert');
+      const styles = type === 'error'
+        ? 'border-red-300 bg-red-50 text-red-800'
+        : 'border-green-300 bg-green-50 text-green-800';
+      box.className = `mb-4 rounded-xl border px-4 py-3 text-sm ${styles}`;
+      box.textContent = message;
+      box.classList.remove('hidden');
+    }
+    function clearAlert() {
+      const box = $('#alert');
+      box.classList.add('hidden');
+      box.textContent = '';
+    }
+    function normalizeUrl(u) {
+      try {
+        const has = /^https?:\/\//i.test(u);
+        return new URL(has ? u : `https://${u}`).toString();
+      } catch {
+        return '';
+      }
+    }
+
+    // ======= DOM refs =======
+    const year = $('#year');
+    const form = $('#form');
+    const urlInput = $('#url');
+    const submit = $('#submit');
+    const btnText = $('#btn-text');
+    const btnSpinner = $('#btn-spinner');
+
+    const result = $('#result');
+    const shortUrl = $('#short-url');
+    const copyBtn = $('#copy');
+    const openBtn = $('#open');
+
+    year.textContent = new Date().getFullYear();
+
+    // ======= API call =======
+    async function shorten(url) {
+      const res = await fetch('/api/shorten', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
-      const data = await response.json();
-      if (response.ok && data.short_url) {
-        resultDiv.innerHTML = `<span class="text-green-600">Short URL: <a href="${data.short_url}" class="underline text-blue-600 hover:text-blue-800 font-semibold transition" target="_blank" rel="noopener">${data.short_url}</a></span>`;
-      } else {
-        resultDiv.innerHTML = `<span class="text-red-600 bg-red-100 border border-red-300 rounded px-4 py-2 inline-block mt-2 font-medium">${data.error || 'Failed to shorten URL.'}</span>`;
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
       }
-    } catch (err) {
-      resultDiv.innerHTML = `<span class="text-red-600 bg-red-100 border border-red-300 rounded px-4 py-2 inline-block mt-2 font-medium">${err.message}</span>`;
+      if (!res.ok) {
+        const msg = (data && (data.error || data.message)) || `Request failed (${res.status})`;
+        throw new Error(msg);
+      }
+      const short = data?.short_url;
+      if (!short) throw new Error('Malformed API response');
+      return short;
     }
+
+    function showResult(url){
+      shortUrl.textContent = url;
+      shortUrl.href = url;
+      openBtn.href = url;
+      result.classList.remove('hidden');
+    }
+    function hideResult() {
+      result.classList.add('hidden');
+      shortUrl.textContent = '';
+      shortUrl.href = '#';
+      openBtn.href = '#';
+    }
+
+    async function onCopy() {
+      try {
+        await navigator.clipboard.writeText(shortUrl.href);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => copyBtn.textContent = 'Copy', 1000);
+      } catch {
+        copyBtn.textContent = 'Copy failed';
+        setTimeout(() => copyBtn.textContent = 'Copy', 1200);
+      }
+    }
+
+    // ======= Submit handler =======
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+      hideResult();
+      const normalized = normalizeUrl(urlInput.value.trim());
+      if (!normalized) {
+        setAlert('Please enter a valid URL.');
+        urlInput.focus();
+        return;
+      }
+      submit.disabled = true;
+      btnSpinner.classList.remove('hidden');
+      btnText.textContent = 'Working...';
+      try {
+        const short = await shorten(normalized);
+        showResult(short);
+        setAlert('Short link created successfully.', 'success');
+      } catch (err) {
+        console.error(err); setAlert(err.message || 'Something went wrong.');
+      } finally {
+        submit.disabled = false; btnSpinner.classList.add('hidden'); btnText.textContent = 'Shorten URL';
+      }
     });
+
+    copyBtn.addEventListener('click', onCopy);
   </script>
 </body>
+</html>
