@@ -12,7 +12,9 @@
 !*.go
 !go.sum
 !go.mod
-
+!.dockerignore
+!Dockerfile
+!compose.yaml
 !README.md
 
 # ...even if they are in subdirectories
