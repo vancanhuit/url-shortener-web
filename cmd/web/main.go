@@ -42,7 +42,7 @@ func main() {
 	}()
 
 	if err := Migrate(db); err != nil {
-		app.Logger.Error("failed to migrate database", "error", err)
+		app.Logger.Error("failed to run database migrations", "error", err)
 		os.Exit(1)
 	}
 
@@ -60,5 +60,5 @@ func main() {
 		app.Logger.Error("failed to start http server", "error", err)
 		os.Exit(1)
 	}
-	app.Logger.Info("http server started", "port", port, "base_url", baseURL)
+	app.Logger.Info("http server started", "addr", server.Addr, "base_url", baseURL)
 }
