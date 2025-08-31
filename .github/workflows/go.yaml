@@ -53,7 +53,7 @@ jobs:
           go test -v -cover ./...
 
       - name: Run build
-        run: go build -o /tmp/url-shortener-web ./cmd/web
+        run: go build -ldflags='-s' -o /tmp/url-shortener-web ./cmd/web
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
