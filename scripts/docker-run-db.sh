@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-name=${1:-test_postgres}
-db_name=${2:-test}
+name=${1:-dev_postgres}
+db_name=${2:-dev}
 docker container rm -f "${name}" 2> /dev/null || true
 
 port="$(docker container port \
