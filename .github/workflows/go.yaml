@@ -49,7 +49,7 @@ jobs:
         run: make test
 
       - name: Run build
-        run: go build -ldflags='-s' -o /tmp/url-shortener-web ./cmd/web
+        run: make build BINARY_PATH=/tmp/url-shortener-web
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
