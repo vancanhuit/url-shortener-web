@@ -42,7 +42,14 @@ jobs:
           go test -v -cover ./...
 
       - name: Run build
-        run: go build -o bin/url-shortener ./cmd/web
+        run: go build -o bin/url-shortener-web ./cmd/web
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: url-shortener-web
+          path: bin/url-shortener-web
+          compression-level: 6
 
       - name: Run golangci-lint
         run: go tool golangci-lint run --timeout 15m -v ./...
