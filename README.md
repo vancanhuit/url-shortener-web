@@ -19,7 +19,9 @@ make clean # Clean up
 
 Run the web locally using Docker Compose:
 ```bash
-docker compose up -d --build
+make compose/build # Build docker image
+make compose/up # Run services
+make compose/down # Shutdown services
 ```
 
 Alternatively with `go run` command:
