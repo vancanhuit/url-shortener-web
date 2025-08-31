@@ -1,5 +1,7 @@
 # Simple URL Shortener
 
+[![Go](https://github.com/vancanhuit/url-shortener-web/actions/workflows/go.yaml/badge.svg)](https://github.com/vancanhuit/url-shortener-web/actions/workflows/go.yaml)
+
 - Install [Go](https://go.dev).
 - Install [Docker](https://docs.docker.com).
 - Install [Docker Compose](https://docs.docker.com/compose/).
