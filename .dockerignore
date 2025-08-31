@@ -1,6 +1,1 @@
 node_modules/
-.github/
-scripts/
-compose.yaml
-.editorconfig
-.gitignore
