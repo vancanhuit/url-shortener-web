@@ -53,6 +53,7 @@ jobs:
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
+        if: ${{ github.ref_type != 'tag' }}
         with:
           name: url-shortener-web
           path: /tmp/url-shortener-web
