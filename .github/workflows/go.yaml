@@ -67,6 +67,8 @@ jobs:
       - name: Docker metadata
         id: metadata
         uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest, index
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
           flavor: |
