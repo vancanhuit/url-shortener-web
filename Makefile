@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 BINARY_PATH ?= /tmp/url-shortener-web
 
-.PHONY: build test clean lint govulncheck run deps css
+.PHONY: build test clean lint govulncheck css deps
 deps:
 	go mod tidy
 	npm install
