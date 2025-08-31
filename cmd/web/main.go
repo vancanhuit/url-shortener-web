@@ -15,15 +15,24 @@ type Application struct {
 	Repo    *Repo
 }
 
+var version = Version()
+
 func main() {
 	var dsn string
 	var port int
 	var baseURL string
+	var displayVersion bool
 
 	flag.StringVar(&dsn, "dsn", os.Getenv("DB_DSN"), "PostgreSQL data source name")
 	flag.IntVar(&port, "port", 8080, "HTTP server port")
 	flag.StringVar(&baseURL, "base-url", "http://localhost:8080", "Base URL for the application")
+	flag.BoolVar(&displayVersion, "version", false, "Display version information")
 	flag.Parse()
+
+	if displayVersion {
+		fmt.Println("Version:", version)
+		os.Exit(0)
+	}
 
 	app := &Application{
 		BaseURL: baseURL,
