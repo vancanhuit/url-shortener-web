@@ -47,7 +47,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: url-shortener
+          name: url-shortener-web
           path: bin/url-shortener-web
           compression-level: 6
 
