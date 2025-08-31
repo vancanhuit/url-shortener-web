@@ -40,20 +40,16 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: |
-            go mod tidy
-            npm install
+        run: make deps
 
       - name: Build Tailwind CSS
-        run: npm run build:css
+        run: make css
 
       - name: Run tests
-        run: |
-          source ./scripts/run-testdb.sh
-          go test -v -cover ./...
+        run: make test
 
       - name: Run build
-        run: go build -o /tmp/url-shortener-web ./cmd/web
+        run: go build -ldflags='-s' -o /tmp/url-shortener-web ./cmd/web
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
@@ -63,10 +59,10 @@ jobs:
           compression-level: 6
 
       - name: Run golangci-lint
-        run: go tool golangci-lint run --timeout 15m -v ./...
+        run: make lint
 
       - name: Run govulncheck
-        run: go tool govulncheck ./...
+        run: make govulncheck
 
       - name: Docker metadata
         id: metadata

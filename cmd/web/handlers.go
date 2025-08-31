@@ -31,7 +31,7 @@ func (app *Application) Shorten(c echo.Context) error {
 
 	alias := GenerateAlias(request.URL, requestID)
 
-	err = app.Repo.Insert(request.URL, alias)
+	alias, err = app.Repo.Insert(request.URL, alias)
 	if err != nil {
 		return err
 	}

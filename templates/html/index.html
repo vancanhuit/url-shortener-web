@@ -68,14 +68,6 @@
       box.classList.add('hidden');
       box.textContent = '';
     }
-    function normalizeUrl(u) {
-      try {
-        const has = /^https?:\/\//i.test(u);
-        return new URL(has ? u : `https://${u}`).toString();
-      } catch {
-        return '';
-      }
-    }
 
     // ======= DOM refs =======
     const year = $('#year');
@@ -142,17 +134,12 @@
       e.preventDefault();
       clearAlert();
       hideResult();
-      const normalized = normalizeUrl(urlInput.value.trim());
-      if (!normalized) {
-        setAlert('Please enter a valid URL.');
-        urlInput.focus();
-        return;
-      }
+      const url = urlInput.value.trim();
       submit.disabled = true;
       btnSpinner.classList.remove('hidden');
       btnText.textContent = 'Working...';
       try {
-        const short = await shorten(normalized);
+        const short = await shorten(url);
         showResult(short);
         setAlert('Short link created successfully.', 'success');
       } catch (err) {
