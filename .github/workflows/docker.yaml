@@ -62,6 +62,7 @@ jobs:
           outputs: type=docker,dest=/tmp/image.tar
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+          annotations: ${{ steps.metadata.outputs.annotations }}
 
       - name: Upload image tarball
         uses: actions/upload-artifact@v4
