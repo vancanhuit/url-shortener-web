@@ -4,7 +4,7 @@ set -euo pipefail
 
 name=${1:-dev_postgres}
 db_name=${2:-dev}
-docker container rm -f "${name}" 2> /dev/null || true
+docker container rm -f "${name}" 2>/dev/null || true
 
 port="$(docker container port \
     "$(docker container run -d --name "${name}" \
@@ -25,7 +25,7 @@ echo "waiting for database container to be ready..."
 
 count=10
 for i in $(seq 1 ${count}); do
-    health_status=$(docker container inspect "$name" -f '{{.State.Health.Status}}')
+    health_status=$(docker container inspect "${name}" -f '{{.State.Health.Status}}')
     [[ ${health_status} == "healthy" ]] && break
     echo "not ready (${i}/${count})"
     sleep 5
