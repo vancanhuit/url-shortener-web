@@ -70,9 +70,12 @@ jobs:
         run: make test
 
       - name: Run build
-        run: make build BINARY_PATH=/tmp/url-shortener-web VERSION=${VERSION}
-        env:
-          VERSION: ${{ github.ref_type == 'tag' && fromJson(steps.metadata.outputs.json).labels['org.opencontainers.image.version'] || format('{0}-{1}', fromJson(steps.metadata.outputs.json).labels['org.opencontainers.image.version'], fromJson(steps.metadata.outputs.json).labels['org.opencontainers.image.revision']) }}
+        run: |
+          git diff --exit-code .
+          VERSION=$(git describe --tags --always)
+          make build BINARY_PATH=/tmp/url-shortener-web VERSION=${VERSION}
+          /tmp/url-shortener-web --version
+          echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
@@ -109,7 +112,7 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           annotations: ${{ steps.metadata.outputs.annotations }}
           build-args: |
-            VERSION=${{ github.ref_type == 'tag' && fromJson(steps.metadata.outputs.json).labels['org.opencontainers.image.version'] || format('{0}-{1}', fromJson(steps.metadata.outputs.json).labels['org.opencontainers.image.version'], fromJson(steps.metadata.outputs.json).labels['org.opencontainers.image.revision']) }}
+            VERSION=${{ env.VERSION }}
 
 
       - name: Upload image tarball
