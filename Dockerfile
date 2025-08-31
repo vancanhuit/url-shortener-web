@@ -5,16 +5,16 @@ RUN npm install
 COPY . .
 RUN npm run build:css
 
-FROM golang:1.25.0-trixie AS go
+FROM golang:1.25.0-bookworm AS go
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=tailwind /app/assets/css/tailwind.css ./assets/css/
-RUN go build -o bin/url-shortener ./cmd/web
+RUN make build BINARY_PATH=/tmp/url-shortener-web
 
 FROM gcr.io/distroless/base-debian12:latest
-COPY --from=go /app/bin/url-shortener /
+COPY --from=go /tmp/url-shortener-web /
 USER nonroot:nonroot
 
-ENTRYPOINT ["/url-shortener"]
+ENTRYPOINT ["/url-shortener-web"]

@@ -25,7 +25,7 @@ func randomDBName() string {
 
 func createTestDB(t *testing.T, dbName string) string {
 	t.Helper()
-	dsn := os.Getenv("TEST_DB_DSN")
+	dsn := os.Getenv("DB_DSN")
 	db, err := OpenDB(dsn)
 	require.NoError(t, err)
 

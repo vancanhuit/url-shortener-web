@@ -11,13 +11,25 @@ type Repo struct {
 	DB *sql.DB
 }
 
-func (r *Repo) Insert(url, alias string) error {
-	stmt := `
+func (r *Repo) Insert(url, alias string) (string, error) {
+	var existingAlias string
+	stmt := `WITH res AS (
 		INSERT INTO urls (original_url, alias) VALUES ($1, $2)
 		ON CONFLICT (original_url)
-		DO NOTHING;`
-	_, err := r.DB.Exec(stmt, url, alias)
-	return err
+		DO NOTHING
+		RETURNING alias
+	)
+	SELECT alias FROM res
+	UNION ALL
+	SELECT alias FROM urls WHERE original_url = $1;`
+	err := r.DB.QueryRow(stmt, url, alias).Scan(&existingAlias)
+	if err != nil && err != sql.ErrNoRows {
+		return "", err
+	}
+	if existingAlias != "" {
+		alias = existingAlias
+	}
+	return alias, nil
 }
 
 func (r *Repo) GetOriginalURL(alias string) (string, error) {

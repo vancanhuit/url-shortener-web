@@ -16,6 +16,7 @@
 !Dockerfile
 !compose.yaml
 !README.md
+!Makefile
 
 # ...even if they are in subdirectories
 !*/
