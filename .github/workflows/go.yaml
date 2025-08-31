@@ -119,6 +119,6 @@ jobs:
           files: /tmp/url-shortener-web
           generate_release_notes: true
           body: |
-            `docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}`
+            `docker pull ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
