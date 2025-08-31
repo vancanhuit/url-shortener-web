@@ -53,13 +53,13 @@ jobs:
           go test -v -cover ./...
 
       - name: Run build
-        run: go build -ldflags='-s' -o /tmp/url-shortener-web ./cmd/web
+        run: go build -ldflags='-s' -o /tmp/url-shortener ./cmd/web
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: url-shortener-web
-          path: /tmp/url-shortener-web
+          name: url-shortener
+          path: /tmp/url-shortener
           compression-level: 6
 
       - name: Run golangci-lint
@@ -120,7 +120,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: /tmp/url-shortener-web
+          files: /tmp/url-shortener
           generate_release_notes: true
           body: |
             `docker pull ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}`
