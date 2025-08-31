@@ -9,7 +9,7 @@ import (
 )
 
 func (app *Application) Index(c echo.Context) error {
-	return c.Render(http.StatusOK, "index.html", nil)
+	return c.Render(http.StatusOK, "index.html", map[string]any{"version": version})
 }
 
 func (app *Application) Shorten(c echo.Context) error {

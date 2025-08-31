@@ -1,5 +1,6 @@
 SHELL := /bin/bash
 BINARY_PATH ?= /tmp/url-shortener-web
+VERSION ?= unknown
 
 .PHONY: build test clean lint govulncheck css deps
 deps:
@@ -7,7 +8,7 @@ deps:
 	npm install
 
 build:
-	go build -ldflags='-s' -o $(BINARY_PATH) ./cmd/web
+	go build -ldflags='-s -X main.version=$(VERSION)' -o $(BINARY_PATH) ./cmd/web
 
 css:
 	npm run build:css
@@ -23,5 +24,4 @@ govulncheck:
 
 clean:
 	docker container rm -f test_postgres 2> /dev/null || true
-	docker container rm -f dev_postgres 2> /dev/null || true
 	docker image prune -f
