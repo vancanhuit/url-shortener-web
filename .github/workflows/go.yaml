@@ -117,5 +117,6 @@ jobs:
         if: github.ref_type == 'tag'
         with:
           files: /tmp/url-shortener-web
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
