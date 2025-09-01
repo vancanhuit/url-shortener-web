@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -63,7 +64,7 @@ func newTestApp(t *testing.T) *Application {
 		Logger: slog.New(slog.DiscardHandler),
 	}
 
-	server := httptest.NewServer(app.Router())
+	server := httptest.NewTLSServer(app.Router())
 	app.BaseURL = server.URL
 
 	t.Cleanup(func() {
@@ -74,14 +75,23 @@ func newTestApp(t *testing.T) *Application {
 	return app
 }
 
-func TestAPIWithValidInput(t *testing.T) {
-	app := newTestApp(t)
-
-	client := &http.Client{
+func newClient() *http.Client {
+	return &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
+}
+
+func TestAPIWithValidInput(t *testing.T) {
+	app := newTestApp(t)
+
+	client := newClient()
 
 	// Test shortening a URL
 	url := "https://example.com"
@@ -129,11 +139,7 @@ func TestAPIWithValidInput(t *testing.T) {
 func TestRedirectWithNonExistentURL(t *testing.T) {
 	app := newTestApp(t)
 
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
+	client := newClient()
 
 	resp, err := client.Get(app.BaseURL + "/r/nonexistent")
 	require.NoError(t, err)
@@ -154,7 +160,7 @@ func TestAPIWithInvalidInput(t *testing.T) {
 	// Setup test server
 	app := newTestApp(t)
 
-	client := &http.Client{}
+	client := newClient()
 
 	b := make([]byte, 1024*1024)
 	_, err := rand.Read(b)
@@ -257,7 +263,7 @@ func TestWebIndex(t *testing.T) {
 	// Setup test server
 	app := newTestApp(t)
 
-	client := &http.Client{}
+	client := newClient()
 
 	resp, err := client.Get(app.BaseURL + "/")
 	require.NoError(t, err)
