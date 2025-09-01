@@ -44,3 +44,9 @@ compose/up:
 .PHONY: compose/build
 compose/build:
 	docker compose build --build-arg=VERSION=$(VERSION)
+
+.PHONY: cert
+cert:
+	@echo "Creating locally-trusted development certificates..."
+	mkdir -pv ./tls
+	mkcert -key-file ./tls/key.pem -cert-file ./tls/cert.pem localhost

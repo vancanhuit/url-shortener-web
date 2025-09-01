@@ -2,10 +2,12 @@
 
 [![Go](https://github.com/vancanhuit/url-shortener-web/actions/workflows/go.yaml/badge.svg)](https://github.com/vancanhuit/url-shortener-web/actions/workflows/go.yaml)
 
-- Install [Go](https://go.dev).
-- Install [Docker](https://docs.docker.com).
-- Install [Docker Compose](https://docs.docker.com/compose/).
-- Install [Node.js](https://nodejs.org/).
+- [Go](https://go.dev).
+- [Docker Engine](https://docs.docker.com/engine/install/).
+- [Docker Compose](https://docs.docker.com/compose/).
+- [Node.js](https://nodejs.org/).
+- [`mkcert`](https://github.com/FiloSottile/mkcert).
+- [`make`](https://makefiletutorial.com/).
 
 ```bash
 make deps # Install go and node dependencies
@@ -14,7 +16,8 @@ make test # Run Go test
 make lint # Run golangci-lint
 make govulncheck # Run vulnerability check
 make build # Build Go binary
-make clean # Clean up
+make cert # Create locally-trusted development certificates
+make clean # Clean up Docker resources
 ```
 
 Run the web locally using Docker Compose:
@@ -27,5 +30,7 @@ make compose/down # Shutdown services
 Alternatively with `go run` command:
 ```bash
 source ./scripts/docker-run-db.sh
-go run ./cmd/web
+go run ./cmd/web -tls -port 8080 -base-url https://localhost:8080
 ```
+
+Access: [https://localhost:8080](https://localhost:8080).

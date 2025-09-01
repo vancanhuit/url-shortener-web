@@ -21,11 +21,17 @@ func main() {
 	var dsn string
 	var port int
 	var baseURL string
+	var tls bool
+	var tlsCertFile string
+	var tlsKeyFile string
 	var displayVersion bool
 
 	flag.StringVar(&dsn, "dsn", os.Getenv("DB_DSN"), "PostgreSQL data source name")
 	flag.IntVar(&port, "port", 8080, "HTTP server port")
 	flag.StringVar(&baseURL, "base-url", "http://localhost:8080", "Base URL for the application")
+	flag.BoolVar(&tls, "tls", false, "Enable TLS")
+	flag.StringVar(&tlsCertFile, "tls-cert-file", "./tls/cert.pem", "Path to TLS certificate file")
+	flag.StringVar(&tlsKeyFile, "tls-key-file", "./tls/key.pem", "Path to TLS key file")
 	flag.BoolVar(&displayVersion, "version", false, "Display version information")
 	flag.Parse()
 
@@ -65,9 +71,15 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		app.Logger.Error("failed to start http server", "error", err)
+	app.Logger.Info("starting server", "addr", server.Addr, "base_url", baseURL)
+	if !tls {
+		err = server.ListenAndServe()
+	} else {
+		err = server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
+	}
+
+	if err != nil && err != http.ErrServerClosed {
+		app.Logger.Error("failed to start server", "error", err)
 		os.Exit(1)
 	}
-	app.Logger.Info("http server started", "addr", server.Addr, "base_url", baseURL)
 }

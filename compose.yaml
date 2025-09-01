@@ -3,10 +3,24 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    user: root
     ports:
       - "8080:8080"
     environment:
       DB_DSN: postgres://dev:secret@db:5432/dev?sslmode=disable
+    secrets:
+      - tls_cert
+      - tls_key
+    command:
+      - -tls
+      - -tls-cert-file
+      - /run/secrets/tls_cert
+      - -tls-key-file
+      - /run/secrets/tls_key
+      - -port
+      - "8080"
+      - -base-url
+      - "https://localhost:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -22,3 +36,9 @@ services:
       interval: 5s
       timeout: 15s
       retries: 5
+
+secrets:
+  tls_cert:
+    file: ./tls/cert.pem
+  tls_key:
+    file: ./tls/key.pem
