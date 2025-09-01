@@ -23,14 +23,22 @@ make clean # Clean up Docker resources
 Run the web locally using Docker Compose:
 ```bash
 make compose/build # Build docker image
+
+# Run a HTTP server: http://localhost:8080
 make compose/up # Run services
 make compose/down # Shutdown services
+# Or
+# Run a HTTPS server: https://localhost:8080
+export COMPOSE_FILE=compose.yaml:compose.https.yaml
+make compose/up
+make compose/down
 ```
 
 Alternatively with `go run` command:
 ```bash
 source ./scripts/docker-run-db.sh
+go run ./cmd/web # Run a HTTP server: http://localhost:8080
+# Or
+# Run a HTTPS server: https://localhost:8080
 go run ./cmd/web -tls -port 8080 -base-url https://localhost:8080
 ```
-
-Access: [https://localhost:8080](https://localhost:8080).

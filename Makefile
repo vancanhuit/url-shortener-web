@@ -1,6 +1,8 @@
 SHELL := /bin/bash
 BINARY_PATH ?= /tmp/url-shortener-web
 VERSION ?= $(shell git describe --tags --always --dirty 2> /dev/null || echo unknown)
+COMPOSE_FILE ?= compose.yaml
+export COMPOSE_FILE
 
 .PHONY: deps
 deps:

@@ -1,0 +1,22 @@
+services:
+  web:
+    user: root
+    secrets:
+      - tls_cert
+      - tls_key
+    command:
+      - -tls
+      - -tls-cert-file
+      - /run/secrets/tls_cert
+      - -tls-key-file
+      - /run/secrets/tls_key
+      - -port
+      - "8080"
+      - -base-url
+      - "https://localhost:8080"
+
+secrets:
+  tls_cert:
+    file: ./tls/cert.pem
+  tls_key:
+    file: ./tls/key.pem

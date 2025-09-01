@@ -15,6 +15,7 @@
 !.dockerignore
 !Dockerfile
 !compose.yaml
+!compose.https.yaml
 !README.md
 !Makefile
 
