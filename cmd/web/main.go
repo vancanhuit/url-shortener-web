@@ -56,6 +56,10 @@ func main() {
 		}
 	}()
 
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxIdleTime(15 * time.Minute)
+
 	if err := Migrate(db); err != nil {
 		app.Logger.Error("failed to run database migrations", "error", err)
 		os.Exit(1)
