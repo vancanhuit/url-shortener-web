@@ -18,7 +18,7 @@ func (r *Repo) Insert(url, alias string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck
 	var existingAlias string
 	stmt := `WITH res AS (
 		INSERT INTO urls (original_url, alias) VALUES ($1, $2)
@@ -51,7 +51,7 @@ func (r *Repo) GetOriginalURL(alias string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck
 	var originalURL string
 	stmt := `SELECT original_url FROM urls WHERE alias = $1;`
 
