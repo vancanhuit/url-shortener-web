@@ -5,52 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="/static/css/tailwind.css" rel="stylesheet"/>
   <title>URL Shortener</title>
-
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+<body class="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-slate-50 to-blue-100 text-slate-900">
   <!-- Header -->
-  <header class="bg-slate-900 text-white py-4">
-    <div class="max-w-3xl mx-auto px-4">
-      <h1 class="text-center text-2xl sm:text-3xl md:text-4xl font-bold">
+  <header class="bg-slate-900 text-white py-8 shadow-lg">
+    <div class="max-w-4xl mx-auto px-4 flex flex-col items-center">
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-blue-200 drop-shadow-lg mb-2 text-center">
+        <span class="inline-block align-middle mr-2">
+          <svg class="h-7 w-7 md:h-9 md:w-9 inline-block text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"></svg>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2h-8a2 2 0 01-2-2v-2m5-12h-6a2 2 0 00-2 2v8a2 2 0 002 2h2"></path>
+          </svg>
+        </span>
         URL Shortener
       </h1>
-      <p class="text-center font-normal align-middle text-slate-300">Version: {{ .version }}</p>
+      <p class="text-center text-slate-300 mt-2 text-base md:text-lg">
+        Version: <span class="font-semibold text-blue-300">{{ .version }}</span>
+      </p>
     </div>
   </header>
 
   <!-- Main -->
-  <main class="flex-1 max-w-5xl mx-auto px-4 py-10">
-    <!-- Alerts (ARIA live region) -->
-    <div id="alert" class="hidden mb-4 rounded-xl border px-4 py-3 text-sm" role="alert" aria-live="assertive"></div>
+  <main class="flex-1 flex items-center justify-center px-2 py-8">
+    <div class="w-full max-w-2xl">
+      <!-- Alerts (ARIA live region) -->
+      <div id="alert" class="hidden mb-4 rounded-xl border px-4 py-3 text-sm transition-all duration-200" role="alert" aria-live="assertive"></div>
 
-    <!-- Form -->
-    <form id="form" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 md:p-8 grid gap-3 w-full max-w-5xl mx-auto">
-      <div class="flex flex-col sm:flex-row gap-3">
-        <input id="url" name="url" type="url" inputmode="url" autocomplete="off" required placeholder="https://example.com/very/long/url" class="w-full flex-1 min-w-0 rounded-2xl border border-slate-300 px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <button id="submit" type="submit" class="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-blue-600 text-white px-5 py-3 text-base font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
-          <span id="btn-text">Shorten</span>
-          <span id="btn-spinner" class="ml-2 hidden h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent"></span>
-        </button>
-      </div>
-    </form>
-
-    <!-- Result -->
-    <section id="result" class="hidden mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5" aria-live="polite">
-      <h2 class="text-sm text-slate-600">Your short link</h2>
-      <div class="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
-        <a id="short-url" href="#" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-700 hover:underline break-all"></a>
-        <div class="flex items-center gap-2">
-          <button id="copy" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs hover:bg-slate-50">Copy</button>
-          <a id="open" href="#" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs hover:bg-slate-50">Open</a>
+      <!-- Form -->
+      <form id="form" class="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 grid gap-6 w-full">
+        <label for="url" class="sr-only">Enter URL to shorten</label>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input id="url" name="url" type="url" inputmode="url" autocomplete="off" required placeholder="Paste your long URL here..." class="w-full flex-1 min-w-0 rounded-2xl border border-slate-300 px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+          <button id="submit" type="submit" class="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-blue-600 text-white px-6 py-3 text-base font-semibold shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition">
+            <span id="btn-text">Shorten URL</span>
+            <span id="btn-spinner" class="ml-2 hidden h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent"></span>
+          </button>
         </div>
-      </div>
-    </section>
+      </form>
+
+      <!-- Result -->
+      <section id="result" class="hidden mt-6 bg-white rounded-3xl border border-slate-200 shadow-xl p-6" aria-live="polite">
+        <h2 class="text-sm text-slate-600 font-semibold">Your short link</h2>
+        <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <a id="short-url" href="#" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-700 hover:underline break-all text-lg"></a>
+          <div class="flex items-center gap-2">
+            <button id="copy" type="button" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs hover:bg-blue-50 transition">Copy</button>
+            <a id="open" href="#" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs hover:bg-blue-50 transition">Open</a>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
   <!-- Footer -->
-  <footer class="bg-slate-900 text-white py-4 mt-auto">
-    <div class="max-w-3xl mx-auto px-4 text-center text-xs sm:text-sm text-slate-300">
-      &copy; <span id="year"></span>
+  <footer class="bg-slate-900 text-white py-4 mt-auto shadow-inner">
+    <div class="max-w-4xl mx-auto px-4 text-center text-xs sm:text-sm text-slate-300">
+      &copy; <span id="year"></span> &mdash; Built with
+      <a href="https://go.dev/" target="_blank" rel="noopener noreferrer" class="font-bold text-blue-400 underline hover:text-blue-200">Go</a>
+      and
+      <a href="https://tailwindcss.com/" target="_blank" rel="noopener noreferrer" class="font-bold text-blue-400 underline hover:text-blue-200">Tailwind CSS</a>
     </div>
   </footer>
 
@@ -62,7 +74,7 @@
       const styles = type === 'error'
         ? 'border-red-300 bg-red-50 text-red-800'
         : 'border-green-300 bg-green-50 text-green-800';
-      box.className = `mb-4 rounded-xl border px-4 py-3 text-sm ${styles}`;
+      box.className = `mb-4 rounded-xl border px-4 py-3 text-sm transition-all duration-200 ${styles}`;
       box.textContent = message;
       box.classList.remove('hidden');
     }
@@ -97,8 +109,7 @@
       let data = null;
       try {
         data = await res.json();
-      } catch {
-      }
+      } catch {}
       if (!res.ok) {
         const msg = (data && (data.error || data.message)) || `Request failed (${res.status})`;
         throw new Error(msg);
