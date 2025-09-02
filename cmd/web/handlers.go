@@ -27,7 +27,7 @@ func (app *Application) Shorten(c echo.Context) error {
 		return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 	}
 
-	requestID := c.Request().Header.Get(echo.HeaderXRequestID)
+	requestID := c.Get("requestID").(string)
 
 	alias := GenerateAlias(request.URL, requestID)
 

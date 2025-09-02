@@ -28,7 +28,11 @@ func (app *Application) Router() http.Handler {
 		templates: template.Must(template.ParseFS(templates.FS, "html/*.html")),
 	}
 
-	e.Use(middleware.RequestID())
+	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		RequestIDHandler: func(c echo.Context, s string) {
+			c.Set("requestID", s)
+		},
+	}))
 	e.Use(middleware.ContextTimeout(60 * time.Second))
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:       true,
