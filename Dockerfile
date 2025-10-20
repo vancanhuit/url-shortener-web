@@ -5,7 +5,7 @@ RUN npm install
 COPY . .
 RUN npm run build:css
 
-FROM golang:1.25.0-bookworm AS go
+FROM golang:1.25.3-bookworm AS go
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
