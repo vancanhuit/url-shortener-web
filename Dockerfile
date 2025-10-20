@@ -1,4 +1,4 @@
-FROM node:22-bookworm AS tailwind
+FROM node:25-bookworm AS tailwind
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
