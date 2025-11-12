@@ -3,15 +3,15 @@ name: Go
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches:
-      - 'main'
+      - "main"
 
 env:
-  GO_VERSION: 1.25.0
+  GO_VERSION: 1.25.4
   REGISTRY: ghcr.io
 
 permissions:
@@ -61,7 +61,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Install dependencies
         run: make deps
@@ -116,7 +116,6 @@ jobs:
           annotations: ${{ steps.metadata.outputs.annotations }}
           build-args: |
             VERSION=${{ env.VERSION }}
-
 
       - name: Upload image tarball
         uses: actions/upload-artifact@v5
