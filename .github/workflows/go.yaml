@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-action.json
+
 name: Go
 
 on:
@@ -12,6 +14,7 @@ on:
 
 env:
   GO_VERSION: 1.25.4
+  NODE_VERSION: 24.11.1
   REGISTRY: ghcr.io
 
 permissions:
@@ -61,7 +64,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Install dependencies
         run: make deps
