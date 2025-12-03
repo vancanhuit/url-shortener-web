@@ -1,11 +1,11 @@
-FROM node:22-bookworm AS tailwind
+FROM node:24.11.1-bookworm AS tailwind
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build:css
 
-FROM golang:1.25.4-bookworm AS go
+FROM golang:1.25.5-bookworm AS go
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
