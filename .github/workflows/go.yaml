@@ -84,7 +84,7 @@ jobs:
           echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
 
       - name: Upload binary
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: ${{ github.ref_type != 'tag' }}
         with:
           name: url-shortener-web
@@ -121,7 +121,7 @@ jobs:
             VERSION=${{ env.VERSION }}
 
       - name: Upload image tarball
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: github.event_name == 'pull_request'
         with:
           name: image
