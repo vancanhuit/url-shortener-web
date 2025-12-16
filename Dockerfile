@@ -1,11 +1,11 @@
-FROM node:24.11.1-bookworm AS tailwind
+FROM node:24.11.1-trixie AS tailwind
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build:css
 
-FROM golang:1.25.5-bookworm AS go
+FROM golang:1.25.5-trixie AS go
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -14,7 +14,7 @@ COPY --from=tailwind /app/assets/css/tailwind.css ./assets/css/
 ARG VERSION=unknown
 RUN make build BINARY_PATH=/tmp/url-shortener-web VERSION=${VERSION}
 
-FROM gcr.io/distroless/base-debian12:latest
+FROM gcr.io/distroless/base-debian13:nonroot
 COPY --from=go /tmp/url-shortener-web /
 USER nonroot:nonroot
 
