@@ -1,4 +1,4 @@
-FROM node:24.11.1-trixie AS tailwind
+FROM node:25.2.1-trixie AS tailwind
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
