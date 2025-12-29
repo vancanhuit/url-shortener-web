@@ -10,7 +10,7 @@ tool (
 
 require (
 	github.com/go-playground/validator/v10 v10.29.0
-	github.com/jackc/pgx/v5 v5.7.6
+	github.com/jackc/pgx/v5 v5.8.0
 	github.com/labstack/echo/v4 v4.14.0
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/stretchr/testify v1.11.1
