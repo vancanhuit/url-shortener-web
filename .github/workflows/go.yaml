@@ -27,6 +27,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.metadata.outputs.app_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Collect metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_version=$(git describe --tags --always --dirty 2> /dev/null || echo "unknown")
+          echo "app_version=${app_version}" >> ${GITHUB_OUTPUT}
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -72,6 +87,7 @@ jobs:
       matrix:
         os: [linux]
         arch: [amd64, arm64]
+    needs: [metadata]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -87,7 +103,7 @@ jobs:
                             --node-version=${{ env.NODE_VERSION }} \
                             --goos=${{ matrix.os }} \
                             --goarch=${{ matrix.arch }} \
-                            --ldflags='-s -w -X main.version=${{ github.sha }}'
+                            --ldflags='-s -w -X main.version=${{ needs.metadata.outputs.app_version }}'
 
       # - name: Run build
       #   run: |
