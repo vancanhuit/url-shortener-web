@@ -36,9 +36,9 @@ build: $(DIST)
 	dagger call build-go-binary --src=. --go-version=$(GO_VERSION) --node-version=$(NODE_VERSION) --ldflags='-s -w -X main.version=$(APP_VERSION)' --output=$(BINARY_PATH)
 
 ## export-oci: Export image as an OCI tarball
-.PHONY: export-oci
-export-oci: $(DIST)
-	dagger call export-oci --src=. --go-version=$(GO_VERSION) --node-version=$(NODE_VERSION) --app-version=$(APP_VERSION) --output=$(OCI_TARBALL_PATH)
+.PHONY: export-oci-tarball
+export-oci-tarball: $(DIST)
+	dagger call export-oci-tarball --src=. --go-version=$(GO_VERSION) --node-version=$(NODE_VERSION) --app-version=$(APP_VERSION) --output=$(OCI_TARBALL_PATH)
 
 ## load-image-from-oci-tarball: Load Docker image from OCI tarball
 .PHONY: load-image-from-oci-tarball

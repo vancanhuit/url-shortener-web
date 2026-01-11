@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://www.schemastore.org/github-action.json
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 
 name: Go
 
@@ -131,7 +131,7 @@ jobs:
           version: latest
           verb: call
           args: >-
-            export-oci --src=. \
+            export-oci-tarball --src=. \
                        --go-version=${{ env.GO_VERSION }} \
                        --node-version=${{ env.NODE_VERSION }} \
                        --app-version=${{ needs.metadata.outputs.app_version }} \

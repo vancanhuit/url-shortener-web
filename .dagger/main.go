@@ -133,7 +133,7 @@ func (m *Ci) Lint(ctx context.Context,
 		WithDirectory("/go/src", srcWithCSS).
 		WithWorkdir("/go/src").
 		WithExec([]string{"golangci-lint", "run", "-v", "./..."}).
-		Stderr(ctx)
+		CombinedOutput(ctx)
 }
 
 // Run Go vulnerability check
@@ -148,7 +148,7 @@ func (m *Ci) Govulncheck(ctx context.Context,
 	return m.goEnv(ctx, src, goVersion).
 		WithExec([]string{"go", "install", "golang.org/x/vuln/cmd/govulncheck@latest"}).
 		WithExec([]string{"govulncheck", "--show", "verbose", "./..."}).
-		Stdout(ctx)
+		CombinedOutput(ctx)
 }
 
 // Run Go tests
@@ -178,7 +178,7 @@ func (m *Ci) Test(ctx context.Context,
 		WithServiceBinding("db", db).
 		WithEnvVariable("TEST_DB_DSN", fmt.Sprintf("postgres://%s:%s@db:5432/%s?sslmode=disable", dbUser, dbPassword, dbName)).
 		WithExec([]string{"go", "test", "-cover", "-v", "./cmd/web"}).
-		Stdout(ctx)
+		CombinedOutput(ctx)
 }
 
 // Build an image for a specific platform, e.g. linux/amd64 or linux/arm64
@@ -218,8 +218,8 @@ func (m *Ci) BuildImageForPlatform(ctx context.Context,
 	})
 }
 
-// Export OCI image with multi-platform support to the specified path
-func (m *Ci) ExportOCI(ctx context.Context,
+// Export OCI tarball with multi-platform support to the specified path
+func (m *Ci) ExportOciTarball(ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -241,7 +241,7 @@ func (m *Ci) ExportOCI(ctx context.Context,
 	})
 }
 
-// Push image to registry
+// Push multi-platform image to registry
 func (m *Ci) PushImageToRegistry(ctx context.Context,
 	// +optional
 	// +defaultPath="/"
