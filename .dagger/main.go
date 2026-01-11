@@ -35,7 +35,7 @@ func (m *Ci) nodeModules(ctx context.Context,
 		WithMountedCache("/root/.npm", dag.CacheVolume("npm")).
 		WithDirectory("/src", files).
 		WithWorkdir("/src").
-		WithExec([]string{"npm", "clean-install"}).
+		WithExec([]string{"npm", "ci"}).
 		Directory("/src/node_modules")
 }
 
