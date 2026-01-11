@@ -117,13 +117,32 @@ jobs:
           path: dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ needs.metadata.outputs.app_version }}
           compression-level: 6
 
-      # - name: Upload image tarball
-      #   uses: actions/upload-artifact@v6
-      #   if: github.event_name == 'pull_request'
-      #   with:
-      #     name: image
-      #     path: /tmp/image.tar
-      #     compression-level: 0
+  export-oci-tarball:
+    runs-on: ubuntu-latest
+    needs: [metadata]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Export OCI tarball
+        uses: dagger/dagger-for-github@v8.2.0
+        with:
+          version: latest
+          verb: call
+          args: >-
+            export-oci --src=. \
+                       --go-version=${{ env.GO_VERSION }} \
+                       --node-version=${{ env.NODE_VERSION }} \
+                       --app-version=${{ needs.metadata.outputs.app_version }}
+                       --output=dist/url-shortener-web-${{ needs.metadata.outputs.app_version }}.tar
+
+      - name: Upload OCI tarball
+        uses: actions/upload-artifact@v6
+        with:
+          name: image
+          path: dist/url-shortener-web-${{ needs.metadata.outputs.app_version }}.tar
+          compression-level: 0
 
       # - name: Release
       #   uses: softprops/action-gh-release@v2
