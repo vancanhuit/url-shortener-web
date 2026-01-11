@@ -106,23 +106,16 @@ jobs:
                             --node-version=${{ env.NODE_VERSION }} \
                             --goos=${{ matrix.os }} \
                             --goarch=${{ matrix.arch }} \
-                            --ldflags='-s -w -X main.version=${{ needs.metadata.outputs.app_version }}'
+                            --ldflags='-s -w -X main.version=${{ needs.metadata.outputs.app_version }}' \
+                            --output=dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ needs.metadata.outputs.app_version }}
 
-      # - name: Run build
-      #   run: |
-      #     git diff --exit-code .
-      #     VERSION=$(git describe --tags --always)
-      #     make build BINARY_PATH=/tmp/url-shortener-web VERSION=${VERSION}
-      #     /tmp/url-shortener-web --version
-      #     echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
-
-      # - name: Upload binary
-      #   uses: actions/upload-artifact@v6
-      #   if: ${{ github.ref_type != 'tag' }}
-      #   with:
-      #     name: url-shortener-web
-      #     path: /tmp/url-shortener-web
-      #     compression-level: 6
+      - name: Upload binary
+        uses: actions/upload-artifact@v6
+        if: ${{ github.ref_type != 'tag' }}
+        with:
+          name: url-shortener-web
+          path: dist/url-shortener-web-*
+          compression-level: 6
 
       # - name: Upload image tarball
       #   uses: actions/upload-artifact@v6
