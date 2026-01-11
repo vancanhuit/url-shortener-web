@@ -114,7 +114,7 @@ jobs:
         if: ${{ github.ref_type != 'tag' }}
         with:
           name: url-shortener-web
-          path: dist/url-shortener-web-*
+          path: dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ needs.metadata.outputs.app_version }}
           compression-level: 6
 
       # - name: Upload image tarball
