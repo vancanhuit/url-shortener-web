@@ -1,21 +1,32 @@
-FROM node:24.11.1-trixie AS tailwind
-WORKDIR /app
+# syntax=docker/dockerfile:1
+
+ARG NODE_VERSION=24.12.0
+ARG GO_VERSION=1.25.5
+
+ARG BUILDPLATFORM
+FROM --platform=${BUILDPLATFORM} node:${NODE_VERSION} AS tailwind
+WORKDIR /src
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build:css
 
-FROM golang:1.25.5-trixie AS go
-WORKDIR /app
+ARG BUILDPLATFORM
+FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION} AS go
+WORKDIR /go/src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY --from=tailwind /app/assets/css/tailwind.css ./assets/css/
-ARG VERSION=unknown
-RUN make build BINARY_PATH=/tmp/url-shortener-web VERSION=${VERSION}
+COPY --from=tailwind /src/assets/css/ ./assets/css/
 
-FROM gcr.io/distroless/base-debian13:nonroot
-COPY --from=go /tmp/url-shortener-web /
+ARG TARGETOS
+ARG TARGETARCH
+ARG APP_VERSION=unknown
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -ldflags="-s -w -X main.version=${APP_VERSION}" -o /go/bin/web ./cmd/web
+
+FROM gcr.io/distroless/static-debian13:nonroot
+COPY --from=go /go/bin/web /web
 USER nonroot:nonroot
 
-ENTRYPOINT ["/url-shortener-web"]
+ENTRYPOINT ["/web"]

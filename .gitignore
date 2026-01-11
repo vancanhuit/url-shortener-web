@@ -31,3 +31,4 @@
 !.gitkeep
 !.editorconfig
 node_modules/*
+!dagger.json

@@ -15,6 +15,7 @@ on:
 env:
   GO_VERSION: 1.25.5
   NODE_VERSION: 24.11.1
+  GOLANGCI_LINT_VERSION: v2.8.0
   REGISTRY: ghcr.io
 
 permissions:
@@ -26,115 +27,52 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci-cd:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
           fetch-tags: true
-          fetch-depth: 0
 
-      - name: Docker metadata
-        id: metadata
-        uses: docker/metadata-action@v5
-        env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest
+      - name: Test
+        uses: dagger/dagger-for-github@v8.2.0
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}
-          flavor: |
-            latest=auto
-            prefix=
-            suffix=
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=tag
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.0') }}
-            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-            type=sha
+          version: latest
+          verb: call
+          args: test --src=. --go-version=${env.GO_VERSION} --node-version=${env.NODE_VERSION}
 
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
+      # - name: Run build
+      #   run: |
+      #     git diff --exit-code .
+      #     VERSION=$(git describe --tags --always)
+      #     make build BINARY_PATH=/tmp/url-shortener-web VERSION=${VERSION}
+      #     /tmp/url-shortener-web --version
+      #     echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
 
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
+      # - name: Upload binary
+      #   uses: actions/upload-artifact@v6
+      #   if: ${{ github.ref_type != 'tag' }}
+      #   with:
+      #     name: url-shortener-web
+      #     path: /tmp/url-shortener-web
+      #     compression-level: 6
 
-      - name: Install dependencies
-        run: make deps
+      # - name: Upload image tarball
+      #   uses: actions/upload-artifact@v6
+      #   if: github.event_name == 'pull_request'
+      #   with:
+      #     name: image
+      #     path: /tmp/image.tar
+      #     compression-level: 0
 
-      - name: Build Tailwind CSS
-        run: make css
-
-      - name: Run tests
-        run: make test
-
-      - name: Run build
-        run: |
-          git diff --exit-code .
-          VERSION=$(git describe --tags --always)
-          make build BINARY_PATH=/tmp/url-shortener-web VERSION=${VERSION}
-          /tmp/url-shortener-web --version
-          echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
-
-      - name: Upload binary
-        uses: actions/upload-artifact@v6
-        if: ${{ github.ref_type != 'tag' }}
-        with:
-          name: url-shortener-web
-          path: /tmp/url-shortener-web
-          compression-level: 6
-
-      - name: Run golangci-lint
-        run: make lint
-
-      - name: Run govulncheck
-        run: make govulncheck
-
-      - name: Login to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          outputs: type=docker,dest=/tmp/image.tar
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          annotations: ${{ steps.metadata.outputs.annotations }}
-          build-args: |
-            VERSION=${{ env.VERSION }}
-
-      - name: Upload image tarball
-        uses: actions/upload-artifact@v6
-        if: github.event_name == 'pull_request'
-        with:
-          name: image
-          path: /tmp/image.tar
-          compression-level: 0
-
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        if: github.ref_type == 'tag'
-        with:
-          files: /tmp/url-shortener-web
-          generate_release_notes: true
-          body: |
-            `docker pull ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}`
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Release
+      #   uses: softprops/action-gh-release@v2
+      #   if: github.ref_type == 'tag'
+      #   with:
+      #     files: /tmp/url-shortener-web
+      #     generate_release_notes: true
+      #     body: |
+      #       `docker pull ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}`
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
