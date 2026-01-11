@@ -113,7 +113,7 @@ jobs:
         uses: actions/upload-artifact@v6
         if: ${{ github.ref_type != 'tag' }}
         with:
-          name: url-shortener-web
+          name: url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ needs.metadata.outputs.app_version }}
           path: dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ needs.metadata.outputs.app_version }}
           compression-level: 6
 
