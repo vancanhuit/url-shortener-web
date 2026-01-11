@@ -27,13 +27,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Lint
+        uses: dagger/dagger-for-github@v8.2.0
+        with:
+          version: latest
+          verb: call
+          args: lint --src=. --go-version=${{ env.GO_VERSION }} --node-version=${{ env.NODE_VERSION }} --golangci-lint-version=${{ env.GOLANGCI_LINT_VERSION }}
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Go vulnerability check
+        uses: dagger/dagger-for-github@v8.2.0
+        with:
+          version: latest
+          verb: call
+          args: govulncheck --src=. --go-version=${{ env.GO_VERSION }}
+
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          fetch-tags: true
 
       - name: Test
         uses: dagger/dagger-for-github@v8.2.0
