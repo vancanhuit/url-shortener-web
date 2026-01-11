@@ -35,7 +35,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          fetch_tags: true
+          fetch-tags: true
       - name: Collect metadata
         id: metadata
         shell: bash
