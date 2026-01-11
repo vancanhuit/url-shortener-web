@@ -14,7 +14,7 @@ on:
 
 env:
   GO_VERSION: 1.25.5
-  NODE_VERSION: 24.11.1
+  NODE_VERSION: 24.12.0
   GOLANGCI_LINT_VERSION: v2.8.0
   REGISTRY: ghcr.io
 
@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -40,7 +40,7 @@ jobs:
         with:
           version: latest
           verb: call
-          args: test --src=. --go-version=${env.GO_VERSION} --node-version=${env.NODE_VERSION}
+          args: test --src=. --go-version=${{ env.GO_VERSION }} --node-version=${{ env.NODE_VERSION }}
 
       # - name: Run build
       #   run: |
