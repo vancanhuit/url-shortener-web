@@ -140,7 +140,7 @@ jobs:
       - name: Upload OCI tarball
         uses: actions/upload-artifact@v6
         with:
-          name: image
+          name: url-shortener-web-oci-tarball
           path: dist/url-shortener-web-${{ needs.metadata.outputs.app_version }}.tar
           compression-level: 0
 
