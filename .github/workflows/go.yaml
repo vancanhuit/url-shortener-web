@@ -170,9 +170,9 @@ jobs:
                     --go-version=${{ env.GO_VERSION }} \
                     --node-version=${{ env.NODE_VERSION }} \
                     --ldflags="-s -w -X main.version=${{ env.APP_VERSION }}" \
-                    --repo=${{ env.REGISTRY }}/${{ env.GITHUB_REPOSITORY }} \
+                    --repo=${{ env.REGISTRY }}/${{ github.repository }} \
                     --tags=${{ env.APP_VERSION }},latest \
-                    --username=${{ env.GITHUB_REPOSITORY_OWNER }} \
+                    --username=${{ github.repository_owner }} \
                     --token=env://GITHUB_TOKEN
 
   release:
