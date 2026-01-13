@@ -91,6 +91,9 @@ jobs:
         os: [linux]
         arch: [amd64, arm64]
     needs: [metadata]
+    env:
+      APP_VERSION: ${{ needs.metadata.outputs.app_version }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -106,21 +109,23 @@ jobs:
                             --node-version=${{ env.NODE_VERSION }} \
                             --goos=${{ matrix.os }} \
                             --goarch=${{ matrix.arch }} \
-                            --ldflags='-s -w -X main.version=${{ needs.metadata.outputs.app_version }}' \
-                            --output=dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ needs.metadata.outputs.app_version }}
+                            --ldflags='-s -w -X main.version=${{ env.APP_VERSION }}' \
+                            --output=dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ env.APP_VERSION }}
 
       - name: Upload binary
         uses: actions/upload-artifact@v6
         if: ${{ github.ref_type != 'tag' }}
         with:
-          name: url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ needs.metadata.outputs.app_version }}
-          path: dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ needs.metadata.outputs.app_version }}
+          name: url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ env.APP_VERSION }}
+          path: dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ env.APP_VERSION }}
           compression-level: 6
 
   export-oci-tarball:
     runs-on: ubuntu-latest
     needs: [metadata]
     if: github.event_name == 'pull_request'
+    env:
+      APP_VERSION: ${{ needs.metadata.outputs.app_version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -134,14 +139,14 @@ jobs:
             export-oci-tarball --src=. \
                        --go-version=${{ env.GO_VERSION }} \
                        --node-version=${{ env.NODE_VERSION }} \
-                       --app-version=${{ needs.metadata.outputs.app_version }} \
-                       --output=dist/url-shortener-web-${{ needs.metadata.outputs.app_version }}.tar
+                       --ldflags="-s -w -X main.version=${{ env.APP_VERSION }}" \
+                       --output=dist/url-shortener-web-${{ env.APP_VERSION }}.tar
 
       - name: Upload OCI tarball
         uses: actions/upload-artifact@v6
         with:
           name: url-shortener-web-oci-tarball
-          path: dist/url-shortener-web-${{ needs.metadata.outputs.app_version }}.tar
+          path: dist/url-shortener-web-${{ env.APP_VERSION }}.tar
           compression-level: 0
 
       # - name: Release
