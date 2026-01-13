@@ -101,7 +101,7 @@ jobs:
           version: latest
           verb: call
           args: >-
-            build-go-binary --src=. \
+            build-binary --src=. \
                             --go-version=${{ env.GO_VERSION }} \
                             --node-version=${{ env.NODE_VERSION }} \
                             --goos=${{ matrix.os }} \

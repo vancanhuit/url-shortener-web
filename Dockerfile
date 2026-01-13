@@ -22,8 +22,9 @@ COPY --from=tailwind /src/assets/css/ ./assets/css/
 ARG TARGETOS
 ARG TARGETARCH
 ARG APP_VERSION=unknown
+ARG LDFLAGS="-s -w"
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags="-s -w -X main.version=${APP_VERSION}" -o /go/bin/web ./cmd/web
+    go build -ldflags "${LDFLAGS}" -o /go/bin/web ./cmd/web
 
 FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=go /go/bin/web /web

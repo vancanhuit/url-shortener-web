@@ -18,12 +18,9 @@ const (
 	golangciLintCacheVolumeKey = "golangci-lint"
 )
 
-func (m *Ci) nodeModules(ctx context.Context,
-	// +optional
-	// +defaultPath="/"
+func (m *Ci) nodeModules(
+	ctx context.Context,
 	src *dagger.Directory,
-	// +optional
-	// +default="24.12.0"
 	nodeVersion string,
 ) *dagger.Directory {
 	files := dag.Directory().
@@ -40,7 +37,8 @@ func (m *Ci) nodeModules(ctx context.Context,
 }
 
 // Build Tailwind CSS
-func (m *Ci) BuildCSS(ctx context.Context,
+func (m *Ci) BuildCSS(
+	ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -58,12 +56,18 @@ func (m *Ci) BuildCSS(ctx context.Context,
 		Directory("/src/assets/css")
 }
 
-func (m *Ci) goEnv(ctx context.Context,
-	// +optional
-	// +defaultPath="/"
+func (m *Ci) srcWithCSS(
+	ctx context.Context,
 	src *dagger.Directory,
-	// +optional
-	// +default="1.25.5"
+	nodeVersion string,
+) *dagger.Directory {
+	css := m.BuildCSS(ctx, src, nodeVersion)
+	return src.WithDirectory("assets/css", css)
+}
+
+func (m *Ci) goEnv(
+	ctx context.Context,
+	src *dagger.Directory,
 	goversion string,
 ) *dagger.Container {
 	return dag.Container().From("golang:"+goversion).
@@ -76,7 +80,8 @@ func (m *Ci) goEnv(ctx context.Context,
 }
 
 // Build Go binary
-func (m *Ci) BuildGoBinary(ctx context.Context,
+func (m *Ci) BuildBinary(
+	ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -92,12 +97,11 @@ func (m *Ci) BuildGoBinary(ctx context.Context,
 	// +optional
 	// +default="amd64"
 	goarch string,
+	// +optional
+	// +default="-s -w"
 	ldflags string,
 ) *dagger.File {
-	css := m.BuildCSS(ctx, src, nodeVersion)
-	srcWithCSS := src.WithDirectory("assets/css", css)
-
-	return m.goEnv(ctx, srcWithCSS, goVersion).
+	return m.goEnv(ctx, m.srcWithCSS(ctx, src, nodeVersion), goVersion).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GOOS", goos).
 		WithEnvVariable("GOARCH", goarch).
@@ -106,7 +110,8 @@ func (m *Ci) BuildGoBinary(ctx context.Context,
 }
 
 // Run golangci-lint
-func (m *Ci) Lint(ctx context.Context,
+func (m *Ci) Lint(
+	ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -120,8 +125,6 @@ func (m *Ci) Lint(ctx context.Context,
 	// +default="v2.8.0"
 	golangciLintVersion string,
 ) (string, error) {
-	css := m.BuildCSS(ctx, src, nodeVersion)
-	srcWithCSS := src.WithDirectory("assets/css", css)
 	return dag.Container().
 		From("golangci/golangci-lint:"+golangciLintVersion).
 		WithEnvVariable("GOMODCACHE", goModCachePath).
@@ -130,14 +133,15 @@ func (m *Ci) Lint(ctx context.Context,
 		WithMountedCache(goModCachePath, dag.CacheVolume(goModCacheVolumeKey)).
 		WithMountedCache(goBuildCachePath, dag.CacheVolume(goBuildCacheVolumeKey)).
 		WithMountedCache(golangciLintCachePath, dag.CacheVolume(golangciLintCacheVolumeKey)).
-		WithDirectory("/go/src", srcWithCSS).
+		WithDirectory("/go/src", m.srcWithCSS(ctx, src, nodeVersion)).
 		WithWorkdir("/go/src").
 		WithExec([]string{"golangci-lint", "run", "-v", "./..."}).
 		CombinedOutput(ctx)
 }
 
 // Run Go vulnerability check
-func (m *Ci) Govulncheck(ctx context.Context,
+func (m *Ci) Govulncheck(
+	ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -152,7 +156,8 @@ func (m *Ci) Govulncheck(ctx context.Context,
 }
 
 // Run Go tests
-func (m *Ci) Test(ctx context.Context,
+func (m *Ci) Test(
+	ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -173,8 +178,7 @@ func (m *Ci) Test(ctx context.Context,
 		WithExposedPort(5432).
 		AsService()
 
-	srcWithCSS := src.WithDirectory("assets/css", m.BuildCSS(ctx, src, nodeVersion))
-	return m.goEnv(ctx, srcWithCSS, goVersion).
+	return m.goEnv(ctx, m.srcWithCSS(ctx, src, nodeVersion), goVersion).
 		WithServiceBinding("db", db).
 		WithEnvVariable("TEST_DB_DSN", fmt.Sprintf("postgres://%s:%s@db:5432/%s?sslmode=disable", dbUser, dbPassword, dbName)).
 		WithExec([]string{"go", "test", "-cover", "-v", "./cmd/web"}).
@@ -182,7 +186,8 @@ func (m *Ci) Test(ctx context.Context,
 }
 
 // Build an image for a specific platform, e.g. linux/amd64 or linux/arm64
-func (m *Ci) BuildImageForPlatform(ctx context.Context,
+func (m *Ci) BuildImage(
+	ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -196,15 +201,15 @@ func (m *Ci) BuildImageForPlatform(ctx context.Context,
 	// +default="24.12.0"
 	nodeVersion string,
 	// +optional
-	// +default="unknown"
-	appVersion string,
+	// +default="-s -w"
+	ldflags string,
 ) *dagger.Container {
 	return src.DockerBuild(dagger.DirectoryDockerBuildOpts{
 		Platform: platform,
 		BuildArgs: []dagger.BuildArg{
 			{
-				Name:  "APP_VERSION",
-				Value: appVersion,
+				Name:  "LDFLAGS",
+				Value: ldflags,
 			},
 			{
 				Name:  "GO_VERSION",
@@ -219,7 +224,8 @@ func (m *Ci) BuildImageForPlatform(ctx context.Context,
 }
 
 // Export OCI tarball with multi-platform support to the specified path
-func (m *Ci) ExportOciTarball(ctx context.Context,
+func (m *Ci) ExportOciTarball(
+	ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -230,11 +236,11 @@ func (m *Ci) ExportOciTarball(ctx context.Context,
 	// +default="24.12.0"
 	nodeVersion string,
 	// +optional
-	// +default="unknown"
-	appVersion string,
+	// +default="-s -w"
+	ldflags string,
 ) *dagger.File {
-	amd64 := m.BuildImageForPlatform(ctx, src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, appVersion)
-	arm64 := m.BuildImageForPlatform(ctx, src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, appVersion)
+	amd64 := m.BuildImage(ctx, src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
+	arm64 := m.BuildImage(ctx, src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
 
 	return amd64.AsTarball(dagger.ContainerAsTarballOpts{
 		PlatformVariants: []*dagger.Container{arm64},
@@ -242,7 +248,8 @@ func (m *Ci) ExportOciTarball(ctx context.Context,
 }
 
 // Push multi-platform image to registry
-func (m *Ci) PushImageToRegistry(ctx context.Context,
+func (m *Ci) PushImage(
+	ctx context.Context,
 	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
@@ -253,19 +260,31 @@ func (m *Ci) PushImageToRegistry(ctx context.Context,
 	// +default="24.12.0"
 	nodeVersion string,
 	// +optional
-	// +default="unknown"
-	appVersion string,
-	imageRef string,
+	// +default="-s -w"
+	ldflags string,
+	repo string,
+	tags []string,
 	username string,
-	password *dagger.Secret,
-) (string, error) {
-	amd64 := m.BuildImageForPlatform(ctx, src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, appVersion)
-	arm64 := m.BuildImageForPlatform(ctx, src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, appVersion)
+	token *dagger.Secret,
+) ([]string, error) {
+	amd64 := m.BuildImage(ctx, src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
+	arm64 := m.BuildImage(ctx, src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
 
-	amd64.WithRegistryAuth("ghcr.io", username, password)
-	arm64.WithRegistryAuth("ghcr.io", username, password)
+	registry := getRegistryFromImageRepo(repo)
 
-	return amd64.Publish(ctx, imageRef, dagger.ContainerPublishOpts{
-		PlatformVariants: []*dagger.Container{arm64},
-	})
+	amd64 = amd64.WithRegistryAuth(registry, username, token)
+	arm64 = arm64.WithRegistryAuth(registry, username, token)
+
+	output := []string{}
+	for _, tag := range tags {
+		published, err := amd64.Publish(ctx, repo+":"+tag, dagger.ContainerPublishOpts{
+			PlatformVariants: []*dagger.Container{arm64},
+		})
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, published)
+	}
+
+	return output, nil
 }
