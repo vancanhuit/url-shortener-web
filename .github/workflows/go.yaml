@@ -84,7 +84,7 @@ jobs:
           verb: call
           args: test --src=. --go-version=${{ env.GO_VERSION }} --node-version=${{ env.NODE_VERSION }}
 
-  build:
+  build-binary:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -149,13 +149,71 @@ jobs:
           path: dist/url-shortener-web-${{ env.APP_VERSION }}.tar
           compression-level: 0
 
-      # - name: Release
-      #   uses: softprops/action-gh-release@v2
-      #   if: github.ref_type == 'tag'
-      #   with:
-      #     files: /tmp/url-shortener-web
-      #     generate_release_notes: true
-      #     body: |
-      #       `docker pull ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}`
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  push-image:
+    runs-on: ubuntu-latest
+    needs: [metadata]
+    if: github.event_name != 'pull_request'
+    env:
+      APP_VERSION: ${{ needs.metadata.outputs.app_version }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Push OCI image
+        uses: dagger/dagger-for-github@v8.2.0
+        with:
+          version: latest
+          verb: call
+          args: >-
+            push-image --src=. \
+                    --go-version=${{ env.GO_VERSION }} \
+                    --node-version=${{ env.NODE_VERSION }} \
+                    --ldflags="-s -w -X main.version=${{ env.APP_VERSION }}" \
+                    --repo=${{ env.REGISTRY }}/${{ env.GITHUB_REPOSITORY }} \
+                    --tags=${{ env.APP_VERSION }},latest \
+                    --username=${{ env.GITHUB_REPOSITORY_OWNER }} \
+                    --token=env://GITHUB_TOKEN
+
+  release:
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    needs:
+      - metadata
+      - lint
+      - test
+      - govulncheck
+      - build-binary
+      - push-image
+
+    env:
+      APP_VERSION: ${{ needs.metadata.outputs.app_version }}
+
+    strategy:
+      matrix:
+        os: [linux]
+        arch: [amd64, arm64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Download binaries
+        uses: actions/download-artifact@v7
+        with:
+          name: url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{env.APP_VERSION }}
+          path: dist/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: dist/url-shortener-web-*
+          generate_release_notes: true
+          body: |
+            `docker pull ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
