@@ -114,7 +114,6 @@ jobs:
 
       - name: Upload binary
         uses: actions/upload-artifact@v6
-        if: ${{ github.ref_type != 'tag' }}
         with:
           name: url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ env.APP_VERSION }}
           path: dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ env.APP_VERSION }}
@@ -189,11 +188,6 @@ jobs:
     env:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
 
-    strategy:
-      matrix:
-        os: [linux]
-        arch: [amd64, arm64]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -204,8 +198,9 @@ jobs:
       - name: Download binaries
         uses: actions/download-artifact@v7
         with:
-          name: url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{env.APP_VERSION }}
+          pattern: url-shortener-web-*
           path: dist/
+          merge-mutliple: true
 
       - name: Create release
         uses: softprops/action-gh-release@v2
