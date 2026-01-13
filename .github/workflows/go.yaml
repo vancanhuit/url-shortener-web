@@ -196,6 +196,7 @@ jobs:
           fetch-tags: true
 
       - name: Download binaries
+        id: download
         uses: actions/download-artifact@v7
         with:
           pattern: url-shortener-web-*
@@ -206,7 +207,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: dist/url-shortener-web-*
+          files: ${{ steps.download.outputs.download-path }}/url-shortener-web-*
           generate_release_notes: true
           body: |
             `docker pull ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}`
