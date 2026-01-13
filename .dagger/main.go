@@ -4,6 +4,7 @@ import (
 	"context"
 	"dagger/ci/internal/dagger"
 	"fmt"
+	"strings"
 )
 
 type Ci struct{}
@@ -267,6 +268,10 @@ func (m *Ci) PushImage(
 	username string,
 	token *dagger.Secret,
 ) ([]string, error) {
+	if len(tags) == 0 {
+		tags = []string{"latest"}
+	}
+
 	amd64 := m.BuildImage(ctx, src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
 	arm64 := m.BuildImage(ctx, src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
 
@@ -276,14 +281,46 @@ func (m *Ci) PushImage(
 	arm64 = arm64.WithRegistryAuth(registry, username, token)
 
 	output := []string{}
-	for _, tag := range tags {
-		published, err := amd64.Publish(ctx, repo+":"+tag, dagger.ContainerPublishOpts{
-			PlatformVariants: []*dagger.Container{arm64},
+
+	primaryTag := tags[0]
+	ref, err := amd64.Publish(ctx, repo+":"+primaryTag, dagger.ContainerPublishOpts{
+		PlatformVariants: []*dagger.Container{arm64},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	output = append(output, ref)
+
+	ref = strings.TrimSpace(ref)
+
+	craneCtr := dag.Container().
+		From("gcr.io/go-containerregistry/crane:debug").
+		WithMountedSecret("/tmp/token", token).
+		WithExec([]string{
+			"sh", "-lc",
+			fmt.Sprintf(
+				"cat /tmp/token | crane auth login %s --username %s --password-stdin",
+				registry, username,
+			),
 		})
-		if err != nil {
-			return nil, err
+
+	if len(tags) > 1 {
+		for _, tag := range tags[1:] {
+			out, err := craneCtr.WithExec([]string{
+				"sh", "-lc",
+				fmt.Sprintf(
+					"crane tag %s %s", ref, tag,
+				),
+			}).CombinedOutput(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			out = strings.TrimSpace(out)
+
+			output = append(output, out)
 		}
-		output = append(output, published)
 	}
 
 	return output, nil
