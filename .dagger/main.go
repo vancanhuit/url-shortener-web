@@ -129,7 +129,7 @@ func (m *Ci) BuildBinary(
 }
 
 // Run golangci-lint
-func (m *Ci) Lint(
+func (m *Ci) GolangciLint(
 	ctx context.Context,
 	// +defaultPath="/"
 	// +ignore=[
@@ -234,20 +234,11 @@ func (m *Ci) Test(
 }
 
 // Build an image for a specific platform, e.g. linux/amd64 or linux/arm64
-func (m *Ci) BuildImage(
-	// +defaultPath="/"
+func (m *Ci) buildImage(
 	src *dagger.Directory,
-	// +optional
-	// +default="linux/amd64"
 	platform dagger.Platform,
-	// +optional
-	// +default="1.25.5"
 	goVersion string,
-	// +optional
-	// +default="24.12.0"
 	nodeVersion string,
-	// +optional
-	// +default="-s -w"
 	ldflags string,
 ) *dagger.Container {
 	return src.DockerBuild(dagger.DirectoryDockerBuildOpts{
@@ -297,8 +288,8 @@ func (m *Ci) ExportOciTarball(
 	// +default="-s -w"
 	ldflags string,
 ) *dagger.File {
-	amd64 := m.BuildImage(src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
-	arm64 := m.BuildImage(src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
+	amd64 := m.buildImage(src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
+	arm64 := m.buildImage(src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
 
 	return amd64.AsTarball(dagger.ContainerAsTarballOpts{
 		PlatformVariants: []*dagger.Container{arm64},
@@ -342,8 +333,8 @@ func (m *Ci) PushImage(
 		tags = []string{"latest"}
 	}
 
-	amd64 := m.BuildImage(src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
-	arm64 := m.BuildImage(src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
+	amd64 := m.buildImage(src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
+	arm64 := m.buildImage(src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
 
 	registry := getRegistryFromImageRepo(repo)
 
