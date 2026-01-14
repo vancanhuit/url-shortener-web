@@ -32,3 +32,4 @@
 !.editorconfig
 node_modules/*
 !dagger.json
+!.dagger/*

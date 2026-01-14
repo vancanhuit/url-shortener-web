@@ -1,1 +1,12 @@
+.git/
+.github/
 node_modules/
+dist/
+.dagger/
+dagger.json
+README.md
+Makefile
+compose*.yaml
+.gitignore
+.dockerignore
+Dockerfile
