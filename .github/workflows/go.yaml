@@ -179,7 +179,7 @@ jobs:
     if: github.ref_type == 'tag'
     needs:
       - metadata
-      - lint
+      - golangci-lint
       - test
       - govulncheck
       - build-binary
