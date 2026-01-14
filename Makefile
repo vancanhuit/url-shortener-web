@@ -76,9 +76,9 @@ test:
 	dagger call test --src=. --node-version=$(NODE_VERSION) --go-version=$(GO_VERSION)
 
 ## lint: Run golangci-lint on the Go codebase
-.PHONY: lint
-lint:
-	dagger call lint \
+.PHONY: golangci-lint
+golangci-lint:
+	dagger call golangci-lint \
 			--src=. \
 			--go-version=$(GO_VERSION) \
 			--node-version=$(NODE_VERSION) \
@@ -103,12 +103,6 @@ push-image:
 					--username=$(REGISTRY_USER) \
 					--token=env://REGISTRY_TOKEN
 
-## clean: Clean up Docker containers and prune unused resources
-.PHONY: clean
-clean:
-	docker system prune -f
-	docker volume prune -f
-
 ## compose/down: Stop and remove Docker Compose services
 .PHONY: compose/down
 compose/down:
@@ -122,7 +116,7 @@ compose/up:
 ## compose/build: Build Docker Compose services with version argument
 .PHONY: compose/build
 compose/build:
-	docker compose build --build-arg=APP_VERSION=$(APP_VERSION)
+	docker compose build --build-arg=LDFLAGS=$(LDFLAGS)
 
 ## cert: Create locally-trusted development TLS certificates
 .PHONY: cert

@@ -6,7 +6,7 @@ ARG GO_VERSION=1.25.5
 ARG BUILDPLATFORM
 FROM --platform=${BUILDPLATFORM} node:${NODE_VERSION} AS tailwind
 WORKDIR /src
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 RUN npm run build:css

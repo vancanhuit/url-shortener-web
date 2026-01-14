@@ -7,9 +7,9 @@
 # Ignore everything
 *
 # But not these files...
-!/.gitignore
+!.gitignore
 
-!*.go
+!**/*.go
 !go.sum
 !go.mod
 !.dockerignore
@@ -19,17 +19,13 @@
 !README.md
 !Makefile
 
-# ...even if they are in subdirectories
-!*/
-!migrations/*.sql
-!scripts/*.sh
-!templates/html/*.html
-!templates/css/*.css
-!.github/workflows/*.yaml
+!assets/
+!migrations/
+!templates/
+!.github/
 !package.json
 !package-lock.json
 !.gitkeep
 !.editorconfig
-node_modules/*
 !dagger.json
-!.dagger/*
+!.dagger/
