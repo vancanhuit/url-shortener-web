@@ -23,14 +23,14 @@ func (m *Ci) nodeModules(
 	src *dagger.Directory,
 	nodeVersion string,
 ) *dagger.Directory {
-	files := dag.Directory().
+	deps := dag.Directory().
 		WithFile("package.json", src.File("package.json")).
 		WithFile("package-lock.json", src.File("package-lock.json"))
 
 	return dag.Container().
 		From("node:"+nodeVersion).
 		WithMountedCache("/root/.npm", dag.CacheVolume("npm")).
-		WithDirectory("/src", files).
+		WithDirectory("/src", deps).
 		WithWorkdir("/src").
 		WithExec([]string{"npm", "ci"}).
 		Directory("/src/node_modules")
@@ -38,8 +38,15 @@ func (m *Ci) nodeModules(
 
 // Build Tailwind CSS
 func (m *Ci) BuildCSS(
-	// +optional
 	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/css/",
+	//   "!templates/html/",
+	//   "!templates/css/"
+	// ]
 	src *dagger.Directory,
 	// +optional
 	// +default="24.12.0"
@@ -67,20 +74,35 @@ func (m *Ci) goEnv(
 	src *dagger.Directory,
 	goversion string,
 ) *dagger.Container {
+	deps := dag.Directory().
+		WithFile("go.mod", src.File("go.mod")).
+		WithFile("go.sum", src.File("go.sum"))
 	return dag.Container().From("golang:"+goversion).
-		WithDirectory("/go/src", src).
+		WithDirectory("/go/src", deps).
 		WithWorkdir("/go/src").
 		WithEnvVariable("GOMODCACHE", goModCachePath).
 		WithEnvVariable("GOCACHE", goBuildCachePath).
 		WithMountedCache(goModCachePath, dag.CacheVolume(goModCacheVolumeKey)).
-		WithMountedCache(goBuildCachePath, dag.CacheVolume(goBuildCacheVolumeKey))
+		WithMountedCache(goBuildCachePath, dag.CacheVolume(goBuildCacheVolumeKey)).
+		WithExec([]string{"go", "mod", "download"}).
+		WithDirectory("/go/src", src)
 }
 
 // Build Go binary
 func (m *Ci) BuildBinary(
 	ctx context.Context,
-	// +optional
 	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
 	src *dagger.Directory,
 	// +optional
 	// +default="1.25.5"
@@ -109,8 +131,18 @@ func (m *Ci) BuildBinary(
 // Run golangci-lint
 func (m *Ci) Lint(
 	ctx context.Context,
-	// +optional
 	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
 	src *dagger.Directory,
 	// +optional
 	// +default="24.12.0"
@@ -139,8 +171,17 @@ func (m *Ci) Lint(
 // Run Go vulnerability check
 func (m *Ci) Govulncheck(
 	ctx context.Context,
-	// +optional
 	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
+
 	src *dagger.Directory,
 	// +optional
 	// +default="1.25.5"
@@ -155,8 +196,18 @@ func (m *Ci) Govulncheck(
 // Run Go tests
 func (m *Ci) Test(
 	ctx context.Context,
-	// +optional
 	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
 	src *dagger.Directory,
 	// +optional
 	// +default="24.12.0"
@@ -184,7 +235,6 @@ func (m *Ci) Test(
 
 // Build an image for a specific platform, e.g. linux/amd64 or linux/arm64
 func (m *Ci) BuildImage(
-	// +optional
 	// +defaultPath="/"
 	src *dagger.Directory,
 	// +optional
@@ -221,8 +271,21 @@ func (m *Ci) BuildImage(
 
 // Export OCI tarball with multi-platform support to the specified path
 func (m *Ci) ExportOciTarball(
-	// +optional
 	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   !Dockerfile,
+	//   !.dockerignore,
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
+
 	src *dagger.Directory,
 	// +optional
 	// +default="1.25.5"
@@ -245,8 +308,21 @@ func (m *Ci) ExportOciTarball(
 // Push multi-platform image to registry
 func (m *Ci) PushImage(
 	ctx context.Context,
-	// +optional
 	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   !Dockerfile,
+	//   !.dockerignore,
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
+
 	src *dagger.Directory,
 	// +optional
 	// +default="1.25.5"
