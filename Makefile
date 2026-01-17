@@ -36,70 +36,72 @@ deps:
 	go mod tidy
 	npm ci
 
+## css: Build the CSS assets using Tailwind CSS
+.PHONY: css
+css:
+	npm run build:css
+
 ## build-binary: Build the Go application binary
 .PHONY: build-binary
 build-binary: $(DIST)
-	dagger call build-binary \
-			--src=. \
-			--go-version=$(GO_VERSION) \
-			--node-version=$(NODE_VERSION) \
-			--goos=$(GOOS) \
-			--goarch=$(GOARCH) \
-			--ldflags=$(LDFLAGS) \
-			--output=$(BINARY_PATH)
+	dagger call --go-version=$(GO_VERSION) \
+				--node-version=$(NODE_VERSION) \
+				--ldflags=$(LDFLAGS) \
+				build-binary \
+				--src=. \
+				--goos=$(GOOS) \
+				--goarch=$(GOARCH) \
+				--output=$(BINARY_PATH)
 
 ## export-oci-tarball: Export image as an OCI tarball
 .PHONY: export-oci-tarball
 export-oci-tarball: $(DIST)
-	dagger call export-oci-tarball \
-			--src=. \
-			--go-version=$(GO_VERSION) \
-			--node-version=$(NODE_VERSION) \
-			--ldflags=$(LDFLAGS) \
-			--output=$(OCI_TARBALL_PATH)
+	dagger call --go-version=$(GO_VERSION) \
+				--node-version=$(NODE_VERSION) \
+				--ldflags=$(LDFLAGS) \
+				export-oci-tarball \
+				--src=. \
+				--output=$(OCI_TARBALL_PATH)
 
 ## load-image-from-oci-tarball: Load Docker image from OCI tarball
 .PHONY: load-image-from-oci-tarball
 load-image-from-oci-tarball:
 	skopeo copy oci-archive:$(OCI_TARBALL_PATH) docker-daemon:$(BINARY_NAME):latest
 
-## css: Build the CSS assets using Tailwind CSS
-.PHONY: css
-css:
-	npm run build:css
-
 ## test: Run Go tests with coverage
 .PHONY: test
 test:
-	dagger call test --src=. --node-version=$(NODE_VERSION) --go-version=$(GO_VERSION)
+	dagger call --node-version=$(NODE_VERSION) \
+				--go-version=$(GO_VERSION) \
+				test --src=. 
 
 ## golangci-lint: Run golangci-lint on the Go codebase
 .PHONY: golangci-lint
 golangci-lint:
-	dagger call golangci-lint \
-			--src=. \
-			--go-version=$(GO_VERSION) \
-			--node-version=$(NODE_VERSION) \
-			--golangci-lint-version=$(GOLANGCI_LINT_VERSION)
+	dagger call --go-version=$(GO_VERSION) \
+				--node-version=$(NODE_VERSION) \
+			 	golangci-lint \
+				--src=. \
+				--golangci-lint-version=$(GOLANGCI_LINT_VERSION)
 
 ## govulncheck: Run Go vulnerability check
 .PHONY: govulncheck
 govulncheck:
-	dagger call govulncheck --src=. --go-version=$(GO_VERSION)
+	dagger call --go-version=$(GO_VERSION) govulncheck --src=. 
 
 .PHONY: push-image
 push-image:
 	@test -n "$(REGISTRY_USER)" || (echo "REGISTRY_USER is required"; exit 1)
 	@test -n "$(REGISTRY_TOKEN)" || (echo "REGISTRY_TOKEN is required"; exit 1)
-	dagger call push-image \
-					--src=. \
-					--node-version=$(NODE_VERSION) \
-					--go-version=$(GO_VERSION) \
-					--ldflags=$(LDFLAGS) \
-					--repo=$(IMAGE_REPO) \
-					--tags=$(IMAGE_TAGS) \
-					--username=$(REGISTRY_USER) \
-					--token=env://REGISTRY_TOKEN
+	dagger call --node-version=$(NODE_VERSION) \
+				--go-version=$(GO_VERSION) \
+				--ldflags=$(LDFLAGS) \
+				push-image \
+				--src=. \
+				--repo=$(IMAGE_REPO) \
+				--tags=$(IMAGE_TAGS) \
+				--username=$(REGISTRY_USER) \
+				--token=env://REGISTRY_TOKEN
 
 ## compose/down: Stop and remove Docker Compose services
 .PHONY: compose/down

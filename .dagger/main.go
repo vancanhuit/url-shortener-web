@@ -7,7 +7,11 @@ import (
 	"strings"
 )
 
-type Ci struct{}
+type Ci struct {
+	GoVersion   string
+	NodeVersion string
+	Ldflags     string
+}
 
 const (
 	goModCachePath        = "/go/.cache/go-mod"
@@ -19,16 +23,34 @@ const (
 	golangciLintCacheVolumeKey = "golangci-lint"
 )
 
-func (m *Ci) nodeModules(
-	src *dagger.Directory,
+func New(
+	// +optional
+	// +default="1.25.5"
+	goVersion string,
+	// +optional
+	// +default="24.12.0"
 	nodeVersion string,
-) *dagger.Directory {
+	// +optional
+	// +default="v2.8.0"
+	golangciLintVersion string,
+	// +optional
+	// +default="-s -w"
+	ldflags string,
+) *Ci {
+	return &Ci{
+		GoVersion:   goVersion,
+		NodeVersion: nodeVersion,
+		Ldflags:     ldflags,
+	}
+}
+
+func (m *Ci) nodeModules(src *dagger.Directory) *dagger.Directory {
 	deps := dag.Directory().
 		WithFile("package.json", src.File("package.json")).
 		WithFile("package-lock.json", src.File("package-lock.json"))
 
 	return dag.Container().
-		From("node:"+nodeVersion).
+		From("node:"+m.NodeVersion).
 		WithMountedCache("/root/.npm", dag.CacheVolume("npm")).
 		WithDirectory("/src", deps).
 		WithWorkdir("/src").
@@ -48,13 +70,10 @@ func (m *Ci) BuildCSS(
 	//   "!templates/css/"
 	// ]
 	src *dagger.Directory,
-	// +optional
-	// +default="24.12.0"
-	nodeVersion string,
 ) *dagger.Directory {
-	nodeModules := m.nodeModules(src, nodeVersion)
+	nodeModules := m.nodeModules(src)
 	return dag.Container().
-		From("node:"+nodeVersion).
+		From("node:"+m.NodeVersion).
 		WithDirectory("/src", src).
 		WithDirectory("/src/node_modules", nodeModules).
 		WithWorkdir("/src").
@@ -62,22 +81,16 @@ func (m *Ci) BuildCSS(
 		Directory("/src/assets/css")
 }
 
-func (m *Ci) srcWithCSS(
-	src *dagger.Directory,
-	nodeVersion string,
-) *dagger.Directory {
-	css := m.BuildCSS(src, nodeVersion)
+func (m *Ci) srcWithCSS(src *dagger.Directory) *dagger.Directory {
+	css := m.BuildCSS(src)
 	return src.WithDirectory("assets/css", css)
 }
 
-func (m *Ci) goEnv(
-	src *dagger.Directory,
-	goversion string,
-) *dagger.Container {
+func (m *Ci) goEnv(src *dagger.Directory) *dagger.Container {
 	deps := dag.Directory().
 		WithFile("go.mod", src.File("go.mod")).
 		WithFile("go.sum", src.File("go.sum"))
-	return dag.Container().From("golang:"+goversion).
+	return dag.Container().From("golang:"+m.GoVersion).
 		WithDirectory("/go/src", deps).
 		WithWorkdir("/go/src").
 		WithEnvVariable("GOMODCACHE", goModCachePath).
@@ -105,26 +118,17 @@ func (m *Ci) BuildBinary(
 	// ]
 	src *dagger.Directory,
 	// +optional
-	// +default="1.25.5"
-	goVersion string,
-	// +optional
-	// +default="24.12.0"
-	nodeVersion string,
-	// +optional
 	// +default="linux"
 	goos string,
 	// +optional
 	// +default="amd64"
 	goarch string,
-	// +optional
-	// +default="-s -w"
-	ldflags string,
 ) *dagger.File {
-	return m.goEnv(m.srcWithCSS(src, nodeVersion), goVersion).
+	return m.goEnv(m.srcWithCSS(src)).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GOOS", goos).
 		WithEnvVariable("GOARCH", goarch).
-		WithExec([]string{"go", "build", "-ldflags", ldflags, "-o", "/go/bin/web", "./cmd/web"}).
+		WithExec([]string{"go", "build", "-trimpath", "-buildvcs=false", "-ldflags", m.Ldflags, "-o", "/go/bin/web", "./cmd/web"}).
 		File("/go/bin/web")
 }
 
@@ -145,12 +149,6 @@ func (m *Ci) GolangciLint(
 	// ]
 	src *dagger.Directory,
 	// +optional
-	// +default="24.12.0"
-	nodeVersion string,
-	// +optional
-	// +default="1.25.5"
-	goVersion string,
-	// +optional
 	// +default="v2.8.0"
 	golangciLintVersion string,
 ) (string, error) {
@@ -162,7 +160,7 @@ func (m *Ci) GolangciLint(
 		WithMountedCache(goModCachePath, dag.CacheVolume(goModCacheVolumeKey)).
 		WithMountedCache(goBuildCachePath, dag.CacheVolume(goBuildCacheVolumeKey)).
 		WithMountedCache(golangciLintCachePath, dag.CacheVolume(golangciLintCacheVolumeKey)).
-		WithDirectory("/go/src", m.srcWithCSS(src, nodeVersion)).
+		WithDirectory("/go/src", m.srcWithCSS(src)).
 		WithWorkdir("/go/src").
 		WithExec([]string{"golangci-lint", "run", "-v", "./..."}).
 		CombinedOutput(ctx)
@@ -182,11 +180,8 @@ func (m *Ci) Govulncheck(
 	//   "!templates/"
 	// ]
 	src *dagger.Directory,
-	// +optional
-	// +default="1.25.5"
-	goVersion string,
 ) (string, error) {
-	return m.goEnv(src, goVersion).
+	return m.goEnv(src).
 		WithExec([]string{"go", "install", "golang.org/x/vuln/cmd/govulncheck@latest"}).
 		WithExec([]string{"govulncheck", "--show", "verbose", "./..."}).
 		CombinedOutput(ctx)
@@ -224,19 +219,13 @@ func (m *Ci) Test(
 	//   "!templates/"
 	// ]
 	src *dagger.Directory,
-	// +optional
-	// +default="24.12.0"
-	nodeVersion string,
-	// +optional
-	// +default="1.25.5"
-	goVersion string,
 ) (string, error) {
 	dbUser := "testuser"
 	dbPassword := "testpassword"
 	dbName := "testdb"
 	db := m.PostgresService("18", dbUser, dbPassword, dbName)
 
-	return m.goEnv(m.srcWithCSS(src, nodeVersion), goVersion).
+	return m.goEnv(m.srcWithCSS(src)).
 		WithServiceBinding("db", db).
 		WithEnvVariable("TEST_DB_DSN", fmt.Sprintf("postgres://%s:%s@db:5432/%s?sslmode=disable", dbUser, dbPassword, dbName)).
 		WithExec([]string{"go", "test", "-cover", "-v", "./cmd/web"}).
@@ -244,27 +233,21 @@ func (m *Ci) Test(
 }
 
 // Build an image for a specific platform, e.g. linux/amd64 or linux/arm64
-func (m *Ci) buildImage(
-	src *dagger.Directory,
-	platform dagger.Platform,
-	goVersion string,
-	nodeVersion string,
-	ldflags string,
-) *dagger.Container {
+func (m *Ci) buildImage(src *dagger.Directory, platform dagger.Platform) *dagger.Container {
 	return src.DockerBuild(dagger.DirectoryDockerBuildOpts{
 		Platform: platform,
 		BuildArgs: []dagger.BuildArg{
 			{
 				Name:  "LDFLAGS",
-				Value: ldflags,
+				Value: m.Ldflags,
 			},
 			{
 				Name:  "GO_VERSION",
-				Value: goVersion,
+				Value: m.GoVersion,
 			},
 			{
 				Name:  "NODE_VERSION",
-				Value: nodeVersion,
+				Value: m.NodeVersion,
 			},
 		},
 	})
@@ -276,8 +259,8 @@ func (m *Ci) ExportOciTarball(
 	// +ignore=[
 	//   "*",
 	//   "!**/*.go",
-	//   !Dockerfile,
-	//   !.dockerignore,
+	//   "!Dockerfile",
+	//   "!.dockerignore",
 	//   "!go.sum",
 	//   "!go.mod",
 	//   "!package.json",
@@ -286,20 +269,10 @@ func (m *Ci) ExportOciTarball(
 	//   "!migrations/",
 	//   "!templates/"
 	// ]
-
 	src *dagger.Directory,
-	// +optional
-	// +default="1.25.5"
-	goVersion string,
-	// +optional
-	// +default="24.12.0"
-	nodeVersion string,
-	// +optional
-	// +default="-s -w"
-	ldflags string,
 ) *dagger.File {
-	amd64 := m.buildImage(src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
-	arm64 := m.buildImage(src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
+	amd64 := m.buildImage(src, dagger.Platform("linux/amd64"))
+	arm64 := m.buildImage(src, dagger.Platform("linux/arm64"))
 
 	return amd64.AsTarball(dagger.ContainerAsTarballOpts{
 		PlatformVariants: []*dagger.Container{arm64},
@@ -313,8 +286,8 @@ func (m *Ci) PushImage(
 	// +ignore=[
 	//   "*",
 	//   "!**/*.go",
-	//   !Dockerfile,
-	//   !.dockerignore,
+	//   "!Dockerfile",
+	//   "!.dockerignore",
 	//   "!go.sum",
 	//   "!go.mod",
 	//   "!package.json",
@@ -323,17 +296,7 @@ func (m *Ci) PushImage(
 	//   "!migrations/",
 	//   "!templates/"
 	// ]
-
 	src *dagger.Directory,
-	// +optional
-	// +default="1.25.5"
-	goVersion string,
-	// +optional
-	// +default="24.12.0"
-	nodeVersion string,
-	// +optional
-	// +default="-s -w"
-	ldflags string,
 	repo string,
 	tags []string,
 	username string,
@@ -343,8 +306,8 @@ func (m *Ci) PushImage(
 		tags = []string{"latest"}
 	}
 
-	amd64 := m.buildImage(src, dagger.Platform("linux/amd64"), goVersion, nodeVersion, ldflags)
-	arm64 := m.buildImage(src, dagger.Platform("linux/arm64"), goVersion, nodeVersion, ldflags)
+	amd64 := m.buildImage(src, dagger.Platform("linux/amd64"))
+	arm64 := m.buildImage(src, dagger.Platform("linux/arm64"))
 
 	registry := getRegistryFromImageRepo(repo)
 

@@ -51,12 +51,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Lint
+      - name: Setup dagger
         uses: dagger/dagger-for-github@v8.2.0
         with:
           version: latest
-          verb: call
-          args: golangci-lint --src=. --go-version=${{ env.GO_VERSION }} --node-version=${{ env.NODE_VERSION }} --golangci-lint-version=${{ env.GOLANGCI_LINT_VERSION }}
+      
+      - name: Run golangci-lint
+        run: |
+          set -euo pipefail
+          make golangci-lint
 
   govulncheck:
     runs-on: ubuntu-latest
@@ -64,12 +67,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Go vulnerability check
+      - name: Setup dagger
         uses: dagger/dagger-for-github@v8.2.0
         with:
           version: latest
-          verb: call
-          args: govulncheck --src=. --go-version=${{ env.GO_VERSION }}
+      
+      - name: Run Go vulnerability check
+        run: |
+          set -euo pipefail
+          make govulncheck
 
   test:
     runs-on: ubuntu-latest
@@ -77,12 +83,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Test
+      - name: Setup dagger
         uses: dagger/dagger-for-github@v8.2.0
         with:
           version: latest
-          verb: call
-          args: test --src=. --go-version=${{ env.GO_VERSION }} --node-version=${{ env.NODE_VERSION }}
+      
+      - name: Run tests
+        run: |
+          set -euo pipefail
+          make test
 
   build-binary:
     runs-on: ubuntu-latest
@@ -98,19 +107,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Build Go binary for Linux AMD64 and ARM64
+      - name: Setup dagger
         uses: dagger/dagger-for-github@v8.2.0
         with:
           version: latest
-          verb: call
-          args: >-
-            build-binary --src=. \
-                            --go-version=${{ env.GO_VERSION }} \
-                            --node-version=${{ env.NODE_VERSION }} \
-                            --goos=${{ matrix.os }} \
-                            --goarch=${{ matrix.arch }} \
-                            --ldflags='-s -w -X main.version=${{ env.APP_VERSION }}' \
-                            --output=dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ env.APP_VERSION }}
+        
+      - name: Build Go binary (${{ matrix.os }}/${{ matrix.arch }})
+        run: |
+          make build-binary GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }}
 
       - name: Upload binary
         uses: actions/upload-artifact@v6
@@ -129,17 +133,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Export OCI tarball
+      - name: Setup dagger
         uses: dagger/dagger-for-github@v8.2.0
         with:
           version: latest
-          verb: call
-          args: >-
-            export-oci-tarball --src=. \
-                       --go-version=${{ env.GO_VERSION }} \
-                       --node-version=${{ env.NODE_VERSION }} \
-                       --ldflags="-s -w -X main.version=${{ env.APP_VERSION }}" \
-                       --output=dist/url-shortener-web-${{ env.APP_VERSION }}.tar
+      
+      - name: Export OCI tarball
+        run: |
+          set -euo pipefail
+          make export-oci-tarball
 
       - name: Upload OCI tarball
         uses: actions/upload-artifact@v6
@@ -159,20 +161,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Push OCI image
+      - name: Setup dagger
         uses: dagger/dagger-for-github@v8.2.0
         with:
           version: latest
-          verb: call
-          args: >-
-            push-image --src=. \
-                    --go-version=${{ env.GO_VERSION }} \
-                    --node-version=${{ env.NODE_VERSION }} \
-                    --ldflags="-s -w -X main.version=${{ env.APP_VERSION }}" \
-                    --repo=${{ env.REGISTRY }}/${{ github.repository }} \
-                    --tags=${{ env.APP_VERSION }},latest \
-                    --username=${{ github.repository_owner }} \
-                    --token=env://GITHUB_TOKEN
+      
+      - name: Push image
+        run: |
+          set -euo pipefail
+          make push-image \
+            IMAGE_REPO=${REGISTRY}/${GITHUB_REPOSITORY} \
+            IMAGE_TAGS=${APP_VERSION},latest \
+            REGISTRY_USER=${GITHUB_REPOSITORY_OWNER} \
+            REGISTRY_TOKEN=${GITHUB_TOKEN}
 
   release:
     runs-on: ubuntu-latest
