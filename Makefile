@@ -1,6 +1,4 @@
 SHELL := /bin/bash
-COMPOSE_FILE ?= compose.yaml
-export COMPOSE_FILE
 
 GO_VERSION ?= 1.25.5
 NODE_VERSION ?= 24.12.0
@@ -23,6 +21,13 @@ IMAGE_REGISTRY ?= ghcr.io
 IMAGE_REPO ?= $(IMAGE_REGISTRY)/${GIT_REPO}
 IMAGE_TAGS ?= latest
 
+DAGGER ?= dagger
+DAGGER_FLAGS ?=
+
+ifeq ($(DEBUG), 1)
+	DAGGER_FLAGS += --debug
+endif
+
 ## help: Show this help message
 .PHONY: help
 help:
@@ -38,70 +43,88 @@ deps:
 	go mod tidy
 	npm ci
 
-## build: Build the Go application binary
+## css: Build the CSS assets using Tailwind CSS
+.PHONY: css
+css:
+	$(DAGGER) call \
+		--node-version=$(NODE_VERSION) \
+		build-css --output assets/css \
+		$(DAGGER_FLAGS)
+
+## build-binary: Build the Go application binary
 .PHONY: build-binary
 build-binary: $(DIST)
-	dagger call build-binary \
-			--src=. \
-			--go-version=$(GO_VERSION) \
-			--node-version=$(NODE_VERSION) \
-			--goos=$(GOOS) \
-			--goarch=$(GOARCH) \
-			--ldflags=$(LDFLAGS) \
-			--output=$(BINARY_PATH)
+	$(DAGGER) call \
+				--go-version=$(GO_VERSION) \
+				--node-version=$(NODE_VERSION) \
+				--ldflags=$(LDFLAGS) \
+				build-binary \
+				--src=. \
+				--goos=$(GOOS) \
+				--goarch=$(GOARCH) \
+				--output=$(BINARY_PATH) \
+				$(DAGGER_FLAGS)
 
-## export-oci: Export image as an OCI tarball
+## export-oci-tarball: Export image as an OCI tarball
 .PHONY: export-oci-tarball
 export-oci-tarball: $(DIST)
-	dagger call export-oci-tarball \
-			--src=. \
-			--go-version=$(GO_VERSION) \
-			--node-version=$(NODE_VERSION) \
-			--ldflags=$(LDFLAGS) \
-			--output=$(OCI_TARBALL_PATH)
+	$(DAGGER) call \
+				--go-version=$(GO_VERSION) \
+				--node-version=$(NODE_VERSION) \
+				--ldflags=$(LDFLAGS) \
+				export-oci-tarball \
+				--src=. \
+				--output=$(OCI_TARBALL_PATH) \
+				$(DAGGER_FLAGS)
 
 ## load-image-from-oci-tarball: Load Docker image from OCI tarball
 .PHONY: load-image-from-oci-tarball
 load-image-from-oci-tarball:
 	skopeo copy oci-archive:$(OCI_TARBALL_PATH) docker-daemon:$(BINARY_NAME):latest
 
-## css: Build the CSS assets using Tailwind CSS
-.PHONY: css
-css:
-	npm run build:css
-
 ## test: Run Go tests with coverage
 .PHONY: test
 test:
-	dagger call test --src=. --node-version=$(NODE_VERSION) --go-version=$(GO_VERSION)
+	$(DAGGER) call \
+				--node-version=$(NODE_VERSION) \
+				--go-version=$(GO_VERSION) \
+				test --src=. \
+				$(DAGGER_FLAGS)
 
-## lint: Run golangci-lint on the Go codebase
+## golangci-lint: Run golangci-lint on the Go codebase
 .PHONY: golangci-lint
 golangci-lint:
-	dagger call golangci-lint \
-			--src=. \
-			--go-version=$(GO_VERSION) \
-			--node-version=$(NODE_VERSION) \
-			--golangci-lint-version=$(GOLANGCI_LINT_VERSION)
+	$(DAGGER) call \
+				--go-version=$(GO_VERSION) \
+				--node-version=$(NODE_VERSION) \
+			 	golangci-lint \
+				--src=. \
+				--golangci-lint-version=$(GOLANGCI_LINT_VERSION) \
+				$(DAGGER_FLAGS)
 
 ## govulncheck: Run Go vulnerability check
 .PHONY: govulncheck
 govulncheck:
-	dagger call govulncheck --src=. --go-version=$(GO_VERSION)
+	$(DAGGER) call \
+		--go-version=$(GO_VERSION) \
+		govulncheck --src=. \
+		$(DAGGER_FLAGS)
 
 .PHONY: push-image
 push-image:
 	@test -n "$(REGISTRY_USER)" || (echo "REGISTRY_USER is required"; exit 1)
 	@test -n "$(REGISTRY_TOKEN)" || (echo "REGISTRY_TOKEN is required"; exit 1)
-	dagger call push-image \
-					--src=. \
-					--node-version=$(NODE_VERSION) \
-					--go-version=$(GO_VERSION) \
-					--ldflags=$(LDFLAGS) \
-					--repo=$(IMAGE_REPO) \
-					--tags=$(IMAGE_TAGS) \
-					--username=$(REGISTRY_USER) \
-					--token=env://REGISTRY_TOKEN
+	$(DAGGER) call \
+				--node-version=$(NODE_VERSION) \
+				--go-version=$(GO_VERSION) \
+				--ldflags=$(LDFLAGS) \
+				push-image \
+				--src=. \
+				--repo=$(IMAGE_REPO) \
+				--tags=$(IMAGE_TAGS) \
+				--username=$(REGISTRY_USER) \
+				--token=env://REGISTRY_TOKEN \
+				$(DAGGER_FLAGS)
 
 ## compose/down: Stop and remove Docker Compose services
 .PHONY: compose/down
@@ -109,9 +132,13 @@ compose/down:
 	docker compose down -v
 
 ## compose/up: Start Docker Compose services in detached mode
-.PHONY: compose/up
-compose/up:
+.PHONY: compose/up/http
+compose/up/http:
 	docker compose up -d
+
+.PHONY: compose/up/https
+compose/up/https:
+	docker compose -f compose.yaml -f compose.https.yaml up -d
 
 ## compose/build: Build Docker Compose services with version argument
 .PHONY: compose/build
