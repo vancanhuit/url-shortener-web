@@ -13,6 +13,7 @@ A minimal URL shortener web application built with Go and Tailwind CSS.
 - [`mkcert`](https://github.com/FiloSottile/mkcert) (for local HTTPS)
 - [`make`](https://makefiletutorial.com/)
 - [`Dagger`](https://dagger.io/)
+- [`skopeo`](https://github.com/containers/skopeo)
 
 ## Setup
 
