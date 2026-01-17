@@ -6,26 +6,35 @@
 
 # Ignore everything
 *
+
 # But not these files...
 !.gitignore
+!.github/
+!.github/**
 
 !**/*.go
 !go.sum
 !go.mod
+
+!package.json
+!package-lock.json
+
 !.dockerignore
 !Dockerfile
 !compose.yaml
 !compose.https.yaml
-!README.md
 !Makefile
+!.editorconfig
+
+!README.md
 
 !assets/
 !migrations/
+!migrations/**
 !templates/
-!.github/
-!package.json
-!package-lock.json
+!templates/**
+
 !.gitkeep
-!.editorconfig
+
 !dagger.json
 !.dagger/

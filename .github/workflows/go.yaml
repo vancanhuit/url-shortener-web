@@ -12,6 +12,10 @@ on:
     branches:
       - "main"
 
+defaults:
+  run:
+    shell: bash
+
 env:
   GO_VERSION: 1.25.5
   NODE_VERSION: 24.12.0
@@ -41,56 +45,34 @@ jobs:
         id: metadata
         shell: bash
         run: |
-          set -euo pipefail
           app_version=$(git describe --tags --always --dirty 2> /dev/null || echo "unknown")
           echo "app_version=${app_version}" >> ${GITHUB_OUTPUT}
 
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup dagger
-        uses: dagger/dagger-for-github@v8.2.0
-        with:
-          version: latest
+      - uses: ./.github/actions/ci-setup
       
       - name: Run golangci-lint
         run: |
-          set -euo pipefail
           make golangci-lint
 
   govulncheck:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup dagger
-        uses: dagger/dagger-for-github@v8.2.0
-        with:
-          version: latest
+      - uses: ./.github/actions/ci-setup
       
       - name: Run Go vulnerability check
         run: |
-          set -euo pipefail
           make govulncheck
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup dagger
-        uses: dagger/dagger-for-github@v8.2.0
-        with:
-          version: latest
+      - uses: ./.github/actions/ci-setup
       
       - name: Run tests
         run: |
-          set -euo pipefail
           make test
 
   build-binary:
@@ -104,13 +86,7 @@ jobs:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup dagger
-        uses: dagger/dagger-for-github@v8.2.0
-        with:
-          version: latest
+      - uses: ./.github/actions/ci-setup
         
       - name: Build Go binary (${{ matrix.os }}/${{ matrix.arch }})
         run: |
@@ -130,23 +106,15 @@ jobs:
     env:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup dagger
-        uses: dagger/dagger-for-github@v8.2.0
-        with:
-          version: latest
+      - uses: ./.github/actions/ci-setup
 
       - name: Install skopeo
         run: |
-          set -euo pipefail
           sudo apt-get -y update
           sudo apt-get -y install skopeo
       
       - name: Export OCI tarball
         run: |
-          set -euo pipefail
           make export-oci-tarball
           make load-image-from-oci-tarball
           docker image ls
@@ -167,17 +135,10 @@ jobs:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup dagger
-        uses: dagger/dagger-for-github@v8.2.0
-        with:
-          version: latest
+      - uses: ./.github/actions/ci-setup
       
       - name: Push image
         run: |
-          set -euo pipefail
           make push-image \
             IMAGE_REPO=${REGISTRY}/${GITHUB_REPOSITORY} \
             IMAGE_TAGS=${APP_VERSION},latest \
