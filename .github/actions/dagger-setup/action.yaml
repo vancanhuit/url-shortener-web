@@ -1,0 +1,15 @@
+name: Dagger setup
+description: Setup dagger engine
+
+runs:
+  using: composite
+  steps:
+    - name: Setup dagger
+      uses: dagger/dagger-for-github@v8.2.0
+      with:
+        version: ${{ inputs.dagger-version }}
+
+    - name: List dagger functions
+      shell: bash
+      run: |
+        dagger functions
