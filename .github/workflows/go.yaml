@@ -142,6 +142,9 @@ jobs:
         run: |
           set -euo pipefail
           make export-oci-tarball
+          make load-image-from-oci-tarball
+          docker image ls
+          docker container run --rm url-shortener-web:latest --version
 
       - name: Upload OCI tarball
         uses: actions/upload-artifact@v6

@@ -22,11 +22,10 @@ Install a local development CA for HTTPS:
 mkcert -install
 ```
 
-Install dependencies and build assets locally:
+Install Go and Node dependencies for local development:
 
 ```bash
 make deps
-make css
 ```
 
 Generate a development TLS certificate:
@@ -36,6 +35,7 @@ make cert
 
 Development tasks:
 ```bash
+make css
 make test
 make golangci-lint
 make govulncheck
@@ -69,6 +69,19 @@ make compose/down
 Start the database and run the web server:
 
 ```bash
+# Run a database service in a terminal
+dagger call postgres-service \
+        --version=18 \
+        --db-user=devuser \
+        --db-password=devpassword \
+        --db-name=devdb \
+        up --ports=15432:5432
+
+# Run in another terminal
+export DB_DSN='postgres://devuser:devpassword@localhost:15432/devdb?sslmode=disable'
+
+make css
+
 # Run HTTP server at http://localhost:8080
 go run ./cmd/web
 
