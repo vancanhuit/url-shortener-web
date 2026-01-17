@@ -181,7 +181,6 @@ func (m *Ci) Govulncheck(
 	//   "!migrations/",
 	//   "!templates/"
 	// ]
-
 	src *dagger.Directory,
 	// +optional
 	// +default="1.25.5"
@@ -191,6 +190,22 @@ func (m *Ci) Govulncheck(
 		WithExec([]string{"go", "install", "golang.org/x/vuln/cmd/govulncheck@latest"}).
 		WithExec([]string{"govulncheck", "--show", "verbose", "./..."}).
 		CombinedOutput(ctx)
+}
+
+// Run Postgres database service
+func (m *Ci) PostgresService(
+	version string,
+	dbUser string,
+	dbPassword string,
+	dbName string,
+) *dagger.Service {
+	return dag.Container().
+		From("postgres:"+version).
+		WithEnvVariable("POSTGRES_USER", dbUser).
+		WithEnvVariable("POSTGRES_PASSWORD", dbPassword).
+		WithEnvVariable("POSTGRES_DB", dbName).
+		WithExposedPort(5432).
+		AsService()
 }
 
 // Run Go tests
@@ -219,12 +234,7 @@ func (m *Ci) Test(
 	dbUser := "testuser"
 	dbPassword := "testpassword"
 	dbName := "testdb"
-	db := dag.Container().From("postgres:18").
-		WithEnvVariable("POSTGRES_USER", dbUser).
-		WithEnvVariable("POSTGRES_PASSWORD", dbPassword).
-		WithEnvVariable("POSTGRES_DB", dbName).
-		WithExposedPort(5432).
-		AsService()
+	db := m.PostgresService("18", dbUser, dbPassword, dbName)
 
 	return m.goEnv(m.srcWithCSS(src, nodeVersion), goVersion).
 		WithServiceBinding("db", db).

@@ -1,6 +1,4 @@
 SHELL := /bin/bash
-COMPOSE_FILE ?= compose.yaml
-export COMPOSE_FILE
 
 GO_VERSION ?= 1.25.5
 NODE_VERSION ?= 24.12.0
@@ -38,7 +36,7 @@ deps:
 	go mod tidy
 	npm ci
 
-## build: Build the Go application binary
+## build-binary: Build the Go application binary
 .PHONY: build-binary
 build-binary: $(DIST)
 	dagger call build-binary \
@@ -50,7 +48,7 @@ build-binary: $(DIST)
 			--ldflags=$(LDFLAGS) \
 			--output=$(BINARY_PATH)
 
-## export-oci: Export image as an OCI tarball
+## export-oci-tarball: Export image as an OCI tarball
 .PHONY: export-oci-tarball
 export-oci-tarball: $(DIST)
 	dagger call export-oci-tarball \
@@ -75,7 +73,7 @@ css:
 test:
 	dagger call test --src=. --node-version=$(NODE_VERSION) --go-version=$(GO_VERSION)
 
-## lint: Run golangci-lint on the Go codebase
+## golangci-lint: Run golangci-lint on the Go codebase
 .PHONY: golangci-lint
 golangci-lint:
 	dagger call golangci-lint \
@@ -109,9 +107,13 @@ compose/down:
 	docker compose down -v
 
 ## compose/up: Start Docker Compose services in detached mode
-.PHONY: compose/up
-compose/up:
+.PHONY: compose/up/http
+compose/up/http:
 	docker compose up -d
+
+.PHONY: compose/up/https
+compose/up/https:
+	docker compose -f compose.yaml -f compose.https.yaml up -d
 
 ## compose/build: Build Docker Compose services with version argument
 .PHONY: compose/build

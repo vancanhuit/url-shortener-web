@@ -7,11 +7,12 @@ A minimal URL shortener web application built with Go and Tailwind CSS.
 ## Prerequisites
 
 - [Go](https://go.dev)
+- [Node.js](https://nodejs.org/)
 - [Docker Engine](https://docs.docker.com/engine/install/)
 - [Docker Compose](https://docs.docker.com/compose/)
-- [Node.js](https://nodejs.org/)
 - [`mkcert`](https://github.com/FiloSottile/mkcert) (for local HTTPS)
 - [`make`](https://makefiletutorial.com/)
+- [`Dagger`](https://dagger.io/)
 
 ## Setup
 
@@ -21,17 +22,28 @@ Install a local development CA for HTTPS:
 mkcert -install
 ```
 
-Install dependencies and build assets:
+Install dependencies and build assets locally:
 
 ```bash
-make deps      # Install Go and Node.js dependencies
-make css       # Build Tailwind CSS
-make test      # Run Go tests
-make lint      # Run golangci-lint
-make govulncheck # Run vulnerability check
-make build     # Build Go binary
-make cert      # Generate development certificates
-make clean     # Clean up Docker resources
+make deps
+make css
+```
+
+Generate a development TLS certificate:
+```bash
+make cert
+```
+
+Development tasks:
+```bash
+make test
+make golangci-lint
+make govulncheck
+make build-binary GOARCH=amd64
+make build-binary GOARCH=arm64
+make export-oci-tarball
+make load-image-from-oci-tarball
+docker container run --rm url-shortener-web:latest --version
 ```
 
 ## Running Locally
@@ -41,15 +53,14 @@ make clean     # Clean up Docker resources
 Build and start the services:
 
 ```bash
-make compose/build   # Build Docker images
+make compose/build
 
 # Run HTTP server at http://localhost:8080
-make compose/up      # Start services
-make compose/down    # Stop services
+make compose/up/http
+make compose/down
 
-# To run HTTPS server at https://localhost:8080
-export COMPOSE_FILE=compose.yaml:compose.https.yaml
-make compose/up
+# Run HTTPS server at https://localhost:8080
+make compose/up/https
 make compose/down
 ```
 
@@ -58,11 +69,9 @@ make compose/down
 Start the database and run the web server:
 
 ```bash
-source ./scripts/docker-run-db.sh
-
 # Run HTTP server at http://localhost:8080
 go run ./cmd/web
 
-# Or run HTTPS server at https://localhost:8080
+# Run HTTPS server at https://localhost:8080
 go run ./cmd/web -tls -port 8080 -base-url https://localhost:8080
 ```
