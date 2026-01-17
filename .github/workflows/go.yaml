@@ -36,8 +36,7 @@ jobs:
     outputs:
       app_version: ${{ steps.metadata.outputs.app_version }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           fetch-tags: true
           fetch-depth: 0
@@ -51,7 +50,8 @@ jobs:
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/actions/ci-setup
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/dagger-setup
       
       - name: Run golangci-lint
         run: |
@@ -60,7 +60,8 @@ jobs:
   govulncheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/actions/ci-setup
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/dagger-setup
       
       - name: Run Go vulnerability check
         run: |
@@ -69,7 +70,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/actions/ci-setup
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/dagger-setup
       
       - name: Run tests
         run: |
@@ -86,7 +88,8 @@ jobs:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
 
     steps:
-      - uses: ./.github/actions/ci-setup
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/dagger-setup
         
       - name: Build Go binary (${{ matrix.os }}/${{ matrix.arch }})
         run: |
@@ -106,7 +109,8 @@ jobs:
     env:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
     steps:
-      - uses: ./.github/actions/ci-setup
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/dagger-setup
 
       - name: Install skopeo
         run: |
@@ -135,7 +139,8 @@ jobs:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: ./.github/actions/ci-setup
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/dagger-setup
       
       - name: Push image
         run: |
