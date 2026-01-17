@@ -11,7 +11,14 @@ GIT_REPO ?= $(shell git config --get remote.origin.url | \
   sed -E 's#(git@|https://)(.+[:/])([^/]+/[^/.]+)(\.git)?#\3#')
 
 APP_VERSION ?= $(shell git describe --tags --always --dirty=-dev 2> /dev/null || echo unknown)
-LDFLAGS ?= "-s -w -X main.version=$(APP_VERSION)"
+COMMIT_HASH ?= $(shell git rev-parse HEAD)
+COMMIT_DATE ?= $(shell date -u -d @$$(git show -s --format=%ct HEAD) +'%Y-%m-%dT%H:%M:%SZ')
+BUILD_DATE ?= $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
+LDFLAGS ?= "-s -w \
+				-X main.version=$(APP_VERSION) \
+				-X main.commitHash=$(COMMIT_HASH) \
+				-X main.commitDate=$(COMMIT_DATE) \
+				-X main.buildDate=$(BUILD_DATE)"
 DIST ?= dist
 BINARY_NAME ?= $(shell basename $(GIT_REPO))
 BINARY_PATH ?= $(DIST)/$(BINARY_NAME)-$(GOOS)-$(GOARCH)-$(APP_VERSION)

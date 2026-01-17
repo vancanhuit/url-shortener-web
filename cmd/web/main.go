@@ -15,7 +15,12 @@ type Application struct {
 	Repo    *Repo
 }
 
-var version = "unknown"
+var (
+	version    = "unknown"
+	commitHash = "unknown"
+	commitDate = "unknown"
+	buildDate  = "unknown"
+)
 
 func main() {
 	var dsn string
@@ -37,6 +42,9 @@ func main() {
 
 	if displayVersion {
 		fmt.Printf("Version: %s\n", version)
+		fmt.Printf("Commit hash: %s\n", commitHash)
+		fmt.Printf("Commit date: %s\n", commitDate)
+		fmt.Printf("Built at: %s\n", buildDate)
 		os.Exit(0)
 	}
 
