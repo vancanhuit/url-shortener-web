@@ -77,9 +77,6 @@ dagger call run-dev-server up --ports=8080:8080
 dagger call run-dev-server --tls up --ports=8080:8080
 ```
 
-```
-```
-
 ### Using Go Directly
 
 Start the database and run the web server:
