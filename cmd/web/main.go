@@ -44,7 +44,7 @@ func main() {
 		fmt.Printf("Version: %s\n", version)
 		fmt.Printf("Commit hash: %s\n", commitHash)
 		fmt.Printf("Commit date: %s\n", commitDate)
-		fmt.Printf("Built at: %s\n", buildDate)
+		fmt.Printf("Build date: %s\n", buildDate)
 		os.Exit(0)
 	}
 
