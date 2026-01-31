@@ -30,11 +30,13 @@ make deps
 ```
 
 Generate a development TLS certificate:
+
 ```bash
 make cert
 ```
 
 Development tasks:
+
 ```bash
 make css
 make test
@@ -63,6 +65,19 @@ make compose/down
 # Run HTTPS server at https://localhost:8080
 make compose/up/https
 make compose/down
+```
+
+### Using Dagger
+
+```bash
+# Run HTTP server at http://localhost:8080
+dagger call run-dev-server up --ports=8080:8080
+
+# Run HTTPS server at https://localhost:8080
+dagger call run-dev-server --tls up --ports=8080:8080
+```
+
+```
 ```
 
 ### Using Go Directly
