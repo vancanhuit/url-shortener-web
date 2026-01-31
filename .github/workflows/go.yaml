@@ -17,8 +17,8 @@ defaults:
     shell: bash
 
 env:
-  GO_VERSION: 1.25.5
-  NODE_VERSION: 24.12.0
+  GO_VERSION: 1.25.6
+  NODE_VERSION: 24.13.0
   GOLANGCI_LINT_VERSION: v2.8.0
   REGISTRY: ghcr.io
   DAGGER_CLOUD_TOKEN: ${{ secrets. DAGGER_CLOUD_TOKEN }}
@@ -53,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/dagger-setup
-      
+
       - name: Run golangci-lint
         run: |
           make golangci-lint
@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/dagger-setup
-      
+
       - name: Run Go vulnerability check
         run: |
           make govulncheck
@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/dagger-setup
-      
+
       - name: Run tests
         run: |
           make test
@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/dagger-setup
-        
+
       - name: Build Go binary (${{ matrix.os }}/${{ matrix.arch }})
         run: |
           make build-binary GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }}
@@ -117,7 +117,7 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt-get -y install skopeo
-      
+
       - name: Export OCI tarball
         run: |
           make export-oci-tarball
@@ -142,7 +142,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/dagger-setup
-      
+
       - name: Push image
         run: |
           make push-image \

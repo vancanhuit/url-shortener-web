@@ -4,6 +4,7 @@ import (
 	"context"
 	"dagger/ci/internal/dagger"
 	"fmt"
+	"runtime"
 	"strings"
 )
 
@@ -25,10 +26,10 @@ const (
 
 func New(
 	// +optional
-	// +default="1.25.5"
+	// +default="1.25.6"
 	goVersion string,
 	// +optional
-	// +default="24.12.0"
+	// +default="24.13.0"
 	nodeVersion string,
 	// +optional
 	// +default="v2.8.0"
@@ -118,12 +119,16 @@ func (m *Ci) BuildBinary(
 	// ]
 	src *dagger.Directory,
 	// +optional
-	// +default="linux"
 	goos string,
 	// +optional
-	// +default="amd64"
 	goarch string,
 ) *dagger.File {
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
 	return m.goEnv(m.srcWithCSS(src)).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GOOS", goos).
@@ -233,7 +238,29 @@ func (m *Ci) Test(
 }
 
 // Build an image for a specific platform, e.g. linux/amd64 or linux/arm64
-func (m *Ci) buildImage(src *dagger.Directory, platform dagger.Platform) *dagger.Container {
+func (m *Ci) BuildImage(
+	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   "!Dockerfile",
+	//   "!.dockerignore",
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
+	src *dagger.Directory,
+	// +optional
+	platform dagger.Platform,
+) *dagger.Container {
+	if platform == "" {
+		platform = dagger.Platform(fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH))
+	}
+
 	return src.DockerBuild(dagger.DirectoryDockerBuildOpts{
 		Platform: platform,
 		BuildArgs: []dagger.BuildArg{
@@ -253,7 +280,7 @@ func (m *Ci) buildImage(src *dagger.Directory, platform dagger.Platform) *dagger
 	})
 }
 
-// Export OCI tarball with multi-platform support to the specified path
+// Export OCI tarball with multi-platform support
 func (m *Ci) ExportOciTarball(
 	// +defaultPath="/"
 	// +ignore=[
@@ -271,15 +298,15 @@ func (m *Ci) ExportOciTarball(
 	// ]
 	src *dagger.Directory,
 ) *dagger.File {
-	amd64 := m.buildImage(src, dagger.Platform("linux/amd64"))
-	arm64 := m.buildImage(src, dagger.Platform("linux/arm64"))
+	amd64 := m.BuildImage(src, dagger.Platform("linux/amd64"))
+	arm64 := m.BuildImage(src, dagger.Platform("linux/arm64"))
 
 	return amd64.AsTarball(dagger.ContainerAsTarballOpts{
 		PlatformVariants: []*dagger.Container{arm64},
 	})
 }
 
-// Push multi-platform image to registry
+// Push a multi-platform image to registry
 func (m *Ci) PushImage(
 	ctx context.Context,
 	// +defaultPath="/"
@@ -306,8 +333,8 @@ func (m *Ci) PushImage(
 		tags = []string{"latest"}
 	}
 
-	amd64 := m.buildImage(src, dagger.Platform("linux/amd64"))
-	arm64 := m.buildImage(src, dagger.Platform("linux/arm64"))
+	amd64 := m.BuildImage(src, dagger.Platform("linux/amd64"))
+	arm64 := m.BuildImage(src, dagger.Platform("linux/arm64"))
 
 	registry := getRegistryFromImageRepo(repo)
 

@@ -24,7 +24,7 @@ ARG TARGETARCH
 ARG APP_VERSION=unknown
 ARG LDFLAGS="-s -w"
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags "${LDFLAGS}" -o /go/bin/web ./cmd/web
+    go build -trimpath -buildvcs=false -ldflags "${LDFLAGS}" -o /go/bin/web ./cmd/web
 
 FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=go /go/bin/web /web
