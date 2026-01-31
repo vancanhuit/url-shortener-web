@@ -50,14 +50,14 @@ deps:
 	go mod tidy
 	npm ci
 
-## css: Build the CSS assets using Tailwind CSS
+## css: Build Tailwind CSS
 .PHONY: css
 css:
 	$(DAGGER) call \
 		--node-version=$(NODE_VERSION) \
 		build-css export --path=assets/css $(DAGGER_FLAGS)
 
-## build-binary: Build the Go application binary
+## build-binary: Build Go binary
 .PHONY: build-binary
 build-binary: $(DIST)
 	$(DAGGER) call \
@@ -71,7 +71,7 @@ build-binary: $(DIST)
 				export \
 				--path=$(BINARY_PATH) $(DAGGER_FLAGS)
 
-## export-oci-tarball: Export image as an OCI tarball
+## export-oci-tarball: Export a container image as an OCI tarball (multi-platform)
 .PHONY: export-oci-tarball
 export-oci-tarball: $(DIST)
 	$(DAGGER) call \
@@ -83,7 +83,7 @@ export-oci-tarball: $(DIST)
 				export \
 				--path=$(OCI_TARBALL_PATH) $(DAGGER_FLAGS)
 
-## load-image-from-oci-tarball: Load Docker image from OCI tarball
+## load-image-from-oci-tarball: Load a container image from OCI tarball to Docker
 .PHONY: load-image-from-oci-tarball
 load-image-from-oci-tarball:
 	skopeo copy oci-archive:$(OCI_TARBALL_PATH) docker-daemon:$(BINARY_NAME):latest
@@ -113,6 +113,7 @@ govulncheck:
 		--go-version=$(GO_VERSION) \
 		govulncheck --src=. $(DAGGER_FLAGS)
 
+## build-image: Build a container image and load to Docker
 .PHONY: build-image
 build-image:
 	$(DAGGER) call \
@@ -124,6 +125,7 @@ build-image:
 				export-image \
 				--name $(BINARY_NAME):latest $(DAGGER_FLAGS)
 
+## push-image: Push an image to a registry (multi-platform)
 .PHONY: push-image
 push-image:
 	@test -n "$(REGISTRY_USER)" || (echo "REGISTRY_USER is required"; exit 1)

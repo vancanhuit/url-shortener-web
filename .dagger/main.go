@@ -280,7 +280,7 @@ func (m *Ci) BuildImage(
 	})
 }
 
-// Export OCI tarball with multi-platform support to the specified path
+// Export OCI tarball with multi-platform support
 func (m *Ci) ExportOciTarball(
 	// +defaultPath="/"
 	// +ignore=[
@@ -306,7 +306,7 @@ func (m *Ci) ExportOciTarball(
 	})
 }
 
-// Push multi-platform image to registry
+// Push a multi-platform image to registry
 func (m *Ci) PushImage(
 	ctx context.Context,
 	// +defaultPath="/"
