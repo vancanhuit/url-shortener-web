@@ -385,3 +385,83 @@ func (m *Ci) PushImage(
 
 	return output, nil
 }
+
+// Run development server
+func (m *Ci) RunDevServer(
+	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
+	src *dagger.Directory,
+	// +optional
+	// +default=8080
+	port int,
+	// +optional
+	// +default=false
+	tls bool,
+	// +optional
+	// +defaultPath="/tls/cert.pem"
+	tlsCertFile *dagger.File,
+	// +optional
+	// +defaultPath="/tls/key.pem"
+	tlsKeyFile *dagger.File,
+) *dagger.Service {
+	dbUser := "devuser"
+	dbPassword := "devpassword"
+	dbName := "devdb"
+	db := m.PostgresService("18", dbUser, dbPassword, dbName)
+
+	env := m.goEnv(m.srcWithCSS(src)).
+		WithServiceBinding("db", db).
+		WithEnvVariable("DB_DSN", fmt.Sprintf("postgres://%s:%s@db:5432/%s?sslmode=disable", dbUser, dbPassword, dbName)).
+		WithExec([]string{
+			"go",
+			"build",
+			"-trimpath",
+			"-buildvcs=false",
+			"-ldflags",
+			m.Ldflags,
+			"-o",
+			"/go/bin/web",
+			"./cmd/web/",
+		})
+
+	srv := env.AsService(dagger.ContainerAsServiceOpts{
+		Args: []string{
+			"/go/bin/web",
+			"-port",
+			fmt.Sprintf("%d", port),
+			"-base-url",
+			fmt.Sprintf("http://localhost:%d", port),
+		},
+	})
+
+	if tls {
+		srv = env.WithMountedFile("/go/tls/cert.pem", tlsCertFile).
+			WithMountedFile("/go/tls/key.pem", tlsKeyFile).
+			AsService(dagger.ContainerAsServiceOpts{
+				Args: []string{
+					"/go/bin/web",
+					"-port",
+					fmt.Sprintf("%d", port),
+					"-tls",
+					"-tls-cert-file",
+					"/go/tls/cert.pem",
+					"-tls-key-file",
+					"/go/tls/key.pem",
+					"-base-url",
+					fmt.Sprintf("https://localhost:%d", port),
+				},
+			})
+	}
+
+	return srv
+}
