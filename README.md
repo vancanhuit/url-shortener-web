@@ -44,8 +44,7 @@ make golangci-lint
 make govulncheck
 make build-binary GOARCH=amd64
 make build-binary GOARCH=arm64
-make export-oci-tarball
-make load-image-from-oci-tarball
+make build-image
 docker container run --rm url-shortener-web:latest --version
 ```
 
