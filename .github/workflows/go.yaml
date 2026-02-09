@@ -17,7 +17,7 @@ defaults:
     shell: bash
 
 env:
-  GO_VERSION: 1.25.6
+  GO_VERSION: 1.25.7
   NODE_VERSION: 24.13.0
   GOLANGCI_LINT_VERSION: v2.8.0
   REGISTRY: ghcr.io
