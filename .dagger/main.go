@@ -26,13 +26,13 @@ const (
 
 func New(
 	// +optional
-	// +default="1.25.7"
+	// +default="1.26.0"
 	goVersion string,
 	// +optional
-	// +default="24.13.0"
+	// +default="24.14.0"
 	nodeVersion string,
 	// +optional
-	// +default="v2.8.0"
+	// +default="v2.9.0"
 	golangciLintVersion string,
 	// +optional
 	// +default="-s -w"
