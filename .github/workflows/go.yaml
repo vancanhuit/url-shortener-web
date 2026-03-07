@@ -97,7 +97,7 @@ jobs:
           make build-binary GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }}
 
       - name: Upload binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ env.APP_VERSION }}
           path: dist/url-shortener-web-${{ matrix.os }}-${{ matrix.arch }}-${{ env.APP_VERSION }}
@@ -126,7 +126,7 @@ jobs:
           docker container run --rm url-shortener-web:latest --version
 
       - name: Upload OCI tarball
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: url-shortener-web-oci-tarball
           path: dist/url-shortener-web-${{ env.APP_VERSION }}.tar
