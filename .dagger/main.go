@@ -26,7 +26,7 @@ const (
 
 func New(
 	// +optional
-	// +default="1.26.0"
+	// +default="1.26.1"
 	goVersion string,
 	// +optional
 	// +default="24.14.0"
