@@ -1,8 +1,8 @@
 SHELL := /bin/bash
 
 GO_VERSION ?= 1.26.1
-NODE_VERSION ?= 24.14.0
-GOLANGCI_LINT_VERSION ?= v2.9.0
+NODE_VERSION ?= 24.14.1
+GOLANGCI_LINT_VERSION ?= v2.11.4
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
