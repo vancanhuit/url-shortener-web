@@ -49,6 +49,9 @@ jobs:
 
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/dagger-setup
@@ -61,6 +64,14 @@ jobs:
 
       - name: Run tests
         run: make test
+
+      - name: Generate coverage profile
+        run: make test-cover-profile
+
+      - name: Coverage report
+        uses: k1LoW/octocov-action@v1
+        with:
+          config: .octocov.yml
 
   build-binary:
     runs-on: ubuntu-latest

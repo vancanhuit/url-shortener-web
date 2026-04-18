@@ -38,6 +38,7 @@ node_modules/
 # Build and dev tools
 !Makefile
 !.editorconfig
+!.octocov.yml
 
 # Dagger CI module
 !dagger.json

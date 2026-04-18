@@ -237,6 +237,35 @@ func (m *Ci) Test(
 		CombinedOutput(ctx)
 }
 
+// Run Go tests and return coverage profile
+func (m *Ci) TestCoverProfile(
+	ctx context.Context,
+	// +defaultPath="/"
+	// +ignore=[
+	//   "*",
+	//   "!**/*.go",
+	//   "!go.sum",
+	//   "!go.mod",
+	//   "!package.json",
+	//   "!package-lock.json",
+	//   "!assets/",
+	//   "!migrations/",
+	//   "!templates/"
+	// ]
+	src *dagger.Directory,
+) *dagger.File {
+	dbUser := "testuser"
+	dbPassword := "testpassword"
+	dbName := "testdb"
+	db := m.PostgresService("18", dbUser, dbPassword, dbName)
+
+	return m.goEnv(m.srcWithCSS(src)).
+		WithServiceBinding("db", db).
+		WithEnvVariable("TEST_DB_DSN", fmt.Sprintf("postgres://%s:%s@db:5432/%s?sslmode=disable", dbUser, dbPassword, dbName)).
+		WithExec([]string{"go", "test", "-coverprofile=coverage.out", "-v", "./cmd/web"}).
+		File("/go/src/coverage.out")
+}
+
 // Build an image for a specific platform, e.g. linux/amd64 or linux/arm64
 func (m *Ci) BuildImage(
 	// +defaultPath="/"
