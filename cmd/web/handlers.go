@@ -13,25 +13,24 @@ func (app *Application) Index(c echo.Context) error {
 }
 
 func (app *Application) Shorten(c echo.Context) error {
+	if c.Request().ContentLength == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "body is empty")
+	}
+
 	var request struct {
 		URL string `json:"url" validate:"required,http_url,max=500"`
 	}
-	err := c.Bind(&request)
-	if err != nil {
+	if err := c.Bind(&request); err != nil {
 		return err
-	} else if c.Request().ContentLength == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "body is empty")
 	}
 
 	if err := c.Validate(request); err != nil {
 		return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 	}
 
-	requestID := c.Get("requestID").(string)
+	alias := GenerateAlias(request.URL)
 
-	alias := GenerateAlias(request.URL, requestID)
-
-	alias, err = app.Repo.Insert(request.URL, alias)
+	alias, err := app.Repo.Insert(c.Request().Context(), request.URL, alias)
 	if err != nil {
 		return err
 	}
@@ -44,8 +43,11 @@ func (app *Application) Shorten(c echo.Context) error {
 
 func (app *Application) Redirect(c echo.Context) error {
 	alias := c.Param("alias")
-	var originalURL string
-	originalURL, err := app.Repo.GetOriginalURL(alias)
+	if len(alias) != 11 || !isValidAlias(alias) {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "requested resource could not be found"})
+	}
+
+	originalURL, err := app.Repo.GetOriginalURL(c.Request().Context(), alias)
 	if err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "requested resource could not be found"})
@@ -54,6 +56,15 @@ func (app *Application) Redirect(c echo.Context) error {
 	}
 
 	return c.Redirect(http.StatusSeeOther, originalURL)
+}
+
+func isValidAlias(s string) bool {
+	for _, c := range s {
+		if (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' && c != '_' {
+			return false
+		}
+	}
+	return true
 }
 
 func (app *Application) CustomHTTPErrorHandler(err error, c echo.Context) {
@@ -72,5 +83,7 @@ func (app *Application) CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 
 	// Send JSON response
-	c.JSON(he.Code, map[string]string{"error": fmt.Sprintf("%v", he.Message)}) //nolint:errcheck
+	if jsonErr := c.JSON(he.Code, map[string]string{"error": fmt.Sprintf("%v", he.Message)}); jsonErr != nil {
+		app.Logger.Error("failed to send error response", "error", jsonErr)
+	}
 }

@@ -1,0 +1,10 @@
+coverage:
+  paths:
+    - coverage.out
+
+comment:
+  enable: true
+  hideFooterLink: false
+
+summary:
+  enable: true
