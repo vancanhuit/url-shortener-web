@@ -1,18 +1,26 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
+
+type Repository interface {
+	Insert(ctx context.Context, url, alias string) (string, error)
+	GetOriginalURL(ctx context.Context, alias string) (string, error)
+}
 
 type Application struct {
 	BaseURL string
 	Logger  *slog.Logger
-	Repo    *Repo
+	Repo    Repository
 }
 
 var (
@@ -23,6 +31,15 @@ var (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	if err := run(logger); err != nil {
+		logger.Error("application exited with error", "error", err)
+		os.Exit(1)
+	}
+}
+
+func run(logger *slog.Logger) error {
 	var dsn string
 	var port int
 	var baseURL string
@@ -45,22 +62,22 @@ func main() {
 		fmt.Printf("Commit hash: %s\n", commitHash)
 		fmt.Printf("Commit date: %s\n", commitDate)
 		fmt.Printf("Build date: %s\n", buildDate)
-		os.Exit(0)
+		return nil
 	}
 
 	app := &Application{
 		BaseURL: baseURL,
-		Logger:  slog.New(slog.NewJSONHandler(os.Stdout, nil)),
+		Logger:  logger,
 	}
 
 	db, err := OpenDB(dsn)
 	if err != nil {
-		app.Logger.Error("failed to open database connection pool", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("open database: %w", err)
 	}
 	defer func() {
+		logger.Info("closing database connection pool")
 		if err := db.Close(); err != nil {
-			app.Logger.Error("failed to close database connection", "error", err)
+			logger.Error("failed to close database connection pool", "error", err)
 		}
 	}()
 
@@ -69,8 +86,7 @@ func main() {
 	db.SetConnMaxIdleTime(15 * time.Minute)
 
 	if err := Migrate(db); err != nil {
-		app.Logger.Error("failed to run database migrations", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("run database migrations: %w", err)
 	}
 
 	app.Repo = &Repo{DB: db}
@@ -83,15 +99,41 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	app.Logger.Info("starting server", "addr", server.Addr, "base_url", baseURL)
-	if !tls {
-		err = server.ListenAndServe()
-	} else {
-		err = server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
+	serverErr := make(chan error, 1)
+	go func() {
+		logger.Info("starting server", "addr", server.Addr, "base_url", baseURL)
+		if !tls {
+			serverErr <- server.ListenAndServe()
+			return
+		}
+		serverErr <- server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
+	}()
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sig)
+
+	select {
+	case err = <-serverErr:
+		if err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("server error: %w", err)
+		}
+	case receivedSignal := <-sig:
+		logger.Info("shutting down server", "signal", receivedSignal.String())
+
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			return fmt.Errorf("shutdown server: %w", err)
+		}
+
+		if err := <-serverErr; err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("server error during shutdown: %w", err)
+		}
+
+		logger.Info("server shutdown gracefully")
 	}
 
-	if err != nil && err != http.ErrServerClosed {
-		app.Logger.Error("failed to start server", "error", err)
-		os.Exit(1)
-	}
+	return nil
 }

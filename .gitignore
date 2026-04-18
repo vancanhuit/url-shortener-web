@@ -7,6 +7,10 @@
 # Ignore everything
 *
 
+# But allow traversal into directories
+!*/
+node_modules/
+
 # But not these files...
 !.gitignore
 !.github/
@@ -36,5 +40,8 @@
 
 !.gitkeep
 
+!LICENSE
+
 !dagger.json
 !.dagger/
+!.dagger/**

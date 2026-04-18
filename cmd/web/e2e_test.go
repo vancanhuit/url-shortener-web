@@ -39,6 +39,7 @@ func createTestDB(t *testing.T, dbName string) string {
 			t.Logf("Failed to drop test database %q: %v", dbName, err)
 		}
 		t.Logf("Test database %q has been dropped successfully", dbName)
+		require.NoError(t, db.Close())
 	})
 
 	parsedURL, err := url.Parse(dsn)
@@ -68,8 +69,8 @@ func newTestApp(t *testing.T) *Application {
 	app.BaseURL = server.URL
 
 	t.Cleanup(func() {
-		server.Close() //nolint:errcheck
-		db.Close()     //nolint:errcheck
+		server.Close()
+		require.NoError(t, db.Close())
 	})
 
 	return app
@@ -97,7 +98,7 @@ func TestAPIWithValidInput(t *testing.T) {
 	url := "https://example.com"
 	resp, err := client.Post(app.BaseURL+"/api/shorten", echo.MIMEApplicationJSON, bytes.NewBufferString(fmt.Sprintf(`{"url":"%s"}`, url)))
 	require.NoError(t, err)
-	defer resp.Body.Close() //nolint:errcheck
+	defer func() { require.NoError(t, resp.Body.Close()) }()
 
 	require.Equal(t, http.StatusCreated, resp.StatusCode)
 	require.Equal(t, echo.MIMEApplicationJSON, resp.Header.Get(echo.HeaderContentType))
@@ -115,7 +116,7 @@ func TestAPIWithValidInput(t *testing.T) {
 	// Test redirecting to the original URL
 	resp, err = client.Get(response.ShortURL)
 	require.NoError(t, err)
-	defer resp.Body.Close() //nolint:errcheck
+	defer func() { require.NoError(t, resp.Body.Close()) }()
 
 	require.Equal(t, http.StatusSeeOther, resp.StatusCode)
 	require.Equal(t, url, resp.Header.Get("Location"))
@@ -125,7 +126,7 @@ func TestAPIWithValidInput(t *testing.T) {
 	// Test existing URL
 	resp, err = client.Post(app.BaseURL+"/api/shorten", echo.MIMEApplicationJSON, bytes.NewBufferString(fmt.Sprintf(`{"url":"%s"}`, url)))
 	require.NoError(t, err)
-	defer resp.Body.Close() //nolint:errcheck
+	defer func() { require.NoError(t, resp.Body.Close()) }()
 
 	require.Equal(t, http.StatusCreated, resp.StatusCode)
 	require.Equal(t, echo.MIMEApplicationJSON, resp.Header.Get(echo.HeaderContentType))
@@ -141,9 +142,10 @@ func TestRedirectWithNonExistentURL(t *testing.T) {
 
 	client := newClient()
 
-	resp, err := client.Get(app.BaseURL + "/r/nonexistent")
+	// Use a valid 11-char alias format that doesn't exist in the DB
+	resp, err := client.Get(app.BaseURL + "/r/abcdefghijk")
 	require.NoError(t, err)
-	defer resp.Body.Close() //nolint:errcheck
+	defer func() { require.NoError(t, resp.Body.Close()) }()
 
 	require.Equal(t, http.StatusNotFound, resp.StatusCode)
 
@@ -154,6 +156,39 @@ func TestRedirectWithNonExistentURL(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, "requested resource could not be found", response.Error)
+}
+
+func TestRedirectWithInvalidAlias(t *testing.T) {
+	app := newTestApp(t)
+
+	client := newClient()
+
+	testCases := []struct {
+		name  string
+		alias string
+	}{
+		{"too short", "abc"},
+		{"too long", "abcdefghijklmnop"},
+		{"invalid chars", "abc!def@hij"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := client.Get(app.BaseURL + "/r/" + tc.alias)
+			require.NoError(t, err)
+			defer func() { require.NoError(t, resp.Body.Close()) }()
+
+			require.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+			var response struct {
+				Error string `json:"error"`
+			}
+			err = json.NewDecoder(resp.Body).Decode(&response)
+			require.NoError(t, err)
+
+			require.Equal(t, "requested resource could not be found", response.Error)
+		})
+	}
 }
 
 func TestAPIWithInvalidInput(t *testing.T) {
@@ -244,7 +279,7 @@ func TestAPIWithInvalidInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			resp, err := client.Post(app.BaseURL+"/api/shorten", "application/json", bytes.NewBufferString(tc.payload))
 			require.NoError(t, err)
-			defer resp.Body.Close() //nolint:errcheck
+			defer func() { require.NoError(t, resp.Body.Close()) }()
 
 			require.Equal(t, tc.statusCode, resp.StatusCode)
 
@@ -267,7 +302,7 @@ func TestWebIndex(t *testing.T) {
 
 	resp, err := client.Get(app.BaseURL + "/")
 	require.NoError(t, err)
-	defer resp.Body.Close() //nolint:errcheck
+	defer func() { require.NoError(t, resp.Body.Close()) }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, "text/html; charset=UTF-8", resp.Header.Get(echo.HeaderContentType))

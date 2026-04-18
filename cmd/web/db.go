@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -13,12 +14,12 @@ import (
 func OpenDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sql open: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ping database: %w", err)
 	}
 	return db, nil
 }
@@ -26,7 +27,10 @@ func OpenDB(dsn string) (*sql.DB, error) {
 func Migrate(db *sql.DB) error {
 	goose.SetBaseFS(migrations.FS)
 	if err := goose.SetDialect("postgres"); err != nil {
-		return err
+		return fmt.Errorf("set dialect: %w", err)
 	}
-	return goose.Up(db, ".")
+	if err := goose.Up(db, "."); err != nil {
+		return fmt.Errorf("goose up: %w", err)
+	}
+	return nil
 }
