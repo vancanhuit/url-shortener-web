@@ -96,6 +96,15 @@ test:
 				--go-version=$(GO_VERSION) \
 				test --src=. $(DAGGER_FLAGS)
 
+## test-cover-profile: Run Go tests and export coverage profile
+.PHONY: test-cover-profile
+test-cover-profile:
+	$(DAGGER) call \
+				--node-version=$(NODE_VERSION) \
+				--go-version=$(GO_VERSION) \
+				test-cover-profile --src=. \
+				export --path=coverage.out $(DAGGER_FLAGS)
+
 ## golangci-lint: Run golangci-lint on the Go codebase
 .PHONY: golangci-lint
 golangci-lint:
