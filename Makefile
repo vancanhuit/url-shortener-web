@@ -65,7 +65,6 @@ build-binary: $(DIST)
 				--node-version=$(NODE_VERSION) \
 				--ldflags=$(LDFLAGS) \
 				build-binary \
-				--src=. \
 				--goos=$(GOOS) \
 				--goarch=$(GOARCH) \
 				export \
@@ -79,7 +78,6 @@ export-oci-tarball: $(DIST)
 				--node-version=$(NODE_VERSION) \
 				--ldflags=$(LDFLAGS) \
 				export-oci-tarball \
-				--src=. \
 				export \
 				--path=$(OCI_TARBALL_PATH) $(DAGGER_FLAGS)
 
@@ -94,7 +92,7 @@ test:
 	$(DAGGER) call \
 				--node-version=$(NODE_VERSION) \
 				--go-version=$(GO_VERSION) \
-				test --src=. $(DAGGER_FLAGS)
+				test $(DAGGER_FLAGS)
 
 ## test-cover-profile: Run Go tests and export coverage profile
 .PHONY: test-cover-profile
@@ -102,7 +100,7 @@ test-cover-profile:
 	$(DAGGER) call \
 				--node-version=$(NODE_VERSION) \
 				--go-version=$(GO_VERSION) \
-				test-cover-profile --src=. \
+				test-cover-profile \
 				export --path=coverage.out $(DAGGER_FLAGS)
 
 ## golangci-lint: Run golangci-lint on the Go codebase
@@ -112,7 +110,6 @@ golangci-lint:
 				--go-version=$(GO_VERSION) \
 				--node-version=$(NODE_VERSION) \
 			 	golangci-lint \
-				--src=. \
 				--golangci-lint-version=$(GOLANGCI_LINT_VERSION) $(DAGGER_FLAGS)
 
 ## govulncheck: Run Go vulnerability check
@@ -120,7 +117,7 @@ golangci-lint:
 govulncheck:
 	$(DAGGER) call \
 		--go-version=$(GO_VERSION) \
-		govulncheck --src=. $(DAGGER_FLAGS)
+		govulncheck $(DAGGER_FLAGS)
 
 ## build-image: Build a container image and load to Docker
 .PHONY: build-image
@@ -130,7 +127,6 @@ build-image:
 				--go-version=$(GO_VERSION) \
 				--ldflags=$(LDFLAGS) \
 				build-image \
-				--src=. \
 				export-image \
 				--name $(BINARY_NAME):latest $(DAGGER_FLAGS)
 
@@ -144,7 +140,6 @@ push-image:
 				--go-version=$(GO_VERSION) \
 				--ldflags=$(LDFLAGS) \
 				push-image \
-				--src=. \
 				--repo=$(IMAGE_REPO) \
 				--tags=$(IMAGE_TAGS) \
 				--username=$(REGISTRY_USER) \

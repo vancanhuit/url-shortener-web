@@ -9,6 +9,7 @@ import (
 )
 
 type Ci struct {
+	Source      *dagger.Directory
 	GoVersion   string
 	NodeVersion string
 	Ldflags     string
@@ -26,6 +27,29 @@ const (
 
 func New(
 	// +optional
+	// +defaultPath="/"
+	// +ignore=[
+	//   ".git",
+	//   "**/.git",
+	//   "bin",
+	//   "dist",
+	//   "build",
+	//   "out",
+	//   "coverage",
+	//   "*.log",
+	//   "*.out",
+	//   "**/node_modules",
+	//   "**/.terraform",
+	//   "*.tfstate*",
+	//   ".venv",
+	//   "__pycache__",
+	//   ".cache",
+	//   ".DS_Store",
+	//   ".idea",
+	//   ".vscode"
+	// ]
+	source *dagger.Directory,
+	// +optional
 	// +default="1.26.2"
 	goVersion string,
 	// +optional
@@ -39,6 +63,7 @@ func New(
 	ldflags string,
 ) *Ci {
 	return &Ci{
+		Source:      source,
 		GoVersion:   goVersion,
 		NodeVersion: nodeVersion,
 		Ldflags:     ldflags,
@@ -60,18 +85,8 @@ func (m *Ci) nodeModules(src *dagger.Directory) *dagger.Directory {
 }
 
 // Build Tailwind CSS
-func (m *Ci) BuildCSS(
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/css/",
-	//   "!templates/html/",
-	//   "!templates/css/"
-	// ]
-	src *dagger.Directory,
-) *dagger.Directory {
+func (m *Ci) BuildCSS() *dagger.Directory {
+	src := m.Source
 	nodeModules := m.nodeModules(src)
 	return dag.Container().
 		From("node:"+m.NodeVersion).
@@ -83,7 +98,7 @@ func (m *Ci) BuildCSS(
 }
 
 func (m *Ci) srcWithCSS(src *dagger.Directory) *dagger.Directory {
-	css := m.BuildCSS(src)
+	css := m.BuildCSS()
 	return src.WithDirectory("assets/css", css)
 }
 
@@ -105,19 +120,6 @@ func (m *Ci) goEnv(src *dagger.Directory) *dagger.Container {
 // Build Go binary
 func (m *Ci) BuildBinary(
 	ctx context.Context,
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
 	// +optional
 	goos string,
 	// +optional
@@ -129,6 +131,7 @@ func (m *Ci) BuildBinary(
 	if goarch == "" {
 		goarch = runtime.GOARCH
 	}
+	src := m.Source
 	return m.goEnv(m.srcWithCSS(src)).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GOOS", goos).
@@ -140,23 +143,11 @@ func (m *Ci) BuildBinary(
 // Run golangci-lint
 func (m *Ci) GolangciLint(
 	ctx context.Context,
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
 	// +optional
 	// +default="v2.8.0"
 	golangciLintVersion string,
 ) (string, error) {
+	src := m.Source
 	return dag.Container().
 		From("golangci/golangci-lint:"+golangciLintVersion).
 		WithEnvVariable("GOMODCACHE", goModCachePath).
@@ -172,20 +163,8 @@ func (m *Ci) GolangciLint(
 }
 
 // Run Go vulnerability check
-func (m *Ci) Govulncheck(
-	ctx context.Context,
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
-) (string, error) {
+func (m *Ci) Govulncheck(ctx context.Context) (string, error) {
+	src := m.Source
 	return m.goEnv(src).
 		WithExec([]string{"go", "install", "golang.org/x/vuln/cmd/govulncheck@latest"}).
 		WithExec([]string{"govulncheck", "--show", "verbose", "./..."}).
@@ -209,22 +188,8 @@ func (m *Ci) PostgresService(
 }
 
 // Run Go tests
-func (m *Ci) Test(
-	ctx context.Context,
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
-) (string, error) {
+func (m *Ci) Test(ctx context.Context) (string, error) {
+	src := m.Source
 	dbUser := "testuser"
 	dbPassword := "testpassword"
 	dbName := "testdb"
@@ -238,27 +203,13 @@ func (m *Ci) Test(
 }
 
 // Run Go tests and return coverage profile
-func (m *Ci) TestCoverProfile(
-	ctx context.Context,
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
-) *dagger.File {
+func (m *Ci) TestCoverProfile(ctx context.Context) *dagger.File {
 	dbUser := "testuser"
 	dbPassword := "testpassword"
 	dbName := "testdb"
 	db := m.PostgresService("18", dbUser, dbPassword, dbName)
 
+	src := m.Source
 	return m.goEnv(m.srcWithCSS(src)).
 		WithServiceBinding("db", db).
 		WithEnvVariable("TEST_DB_DSN", fmt.Sprintf("postgres://%s:%s@db:5432/%s?sslmode=disable", dbUser, dbPassword, dbName)).
@@ -268,21 +219,6 @@ func (m *Ci) TestCoverProfile(
 
 // Build an image for a specific platform, e.g. linux/amd64 or linux/arm64
 func (m *Ci) BuildImage(
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!Dockerfile",
-	//   "!.dockerignore",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
 	// +optional
 	platform dagger.Platform,
 ) *dagger.Container {
@@ -290,6 +226,7 @@ func (m *Ci) BuildImage(
 		platform = dagger.Platform(fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH))
 	}
 
+	src := m.Source
 	return src.DockerBuild(dagger.DirectoryDockerBuildOpts{
 		Platform: platform,
 		BuildArgs: []dagger.BuildArg{
@@ -310,25 +247,9 @@ func (m *Ci) BuildImage(
 }
 
 // Export OCI tarball with multi-platform support
-func (m *Ci) ExportOciTarball(
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!Dockerfile",
-	//   "!.dockerignore",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
-) *dagger.File {
-	amd64 := m.BuildImage(src, dagger.Platform("linux/amd64"))
-	arm64 := m.BuildImage(src, dagger.Platform("linux/arm64"))
+func (m *Ci) ExportOciTarball() *dagger.File {
+	amd64 := m.BuildImage(dagger.Platform("linux/amd64"))
+	arm64 := m.BuildImage(dagger.Platform("linux/arm64"))
 
 	return amd64.AsTarball(dagger.ContainerAsTarballOpts{
 		PlatformVariants: []*dagger.Container{arm64},
@@ -338,21 +259,6 @@ func (m *Ci) ExportOciTarball(
 // Push a multi-platform image to registry
 func (m *Ci) PushImage(
 	ctx context.Context,
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!Dockerfile",
-	//   "!.dockerignore",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
 	repo string,
 	tags []string,
 	username string,
@@ -362,8 +268,8 @@ func (m *Ci) PushImage(
 		tags = []string{"latest"}
 	}
 
-	amd64 := m.BuildImage(src, dagger.Platform("linux/amd64"))
-	arm64 := m.BuildImage(src, dagger.Platform("linux/arm64"))
+	amd64 := m.BuildImage(dagger.Platform("linux/amd64"))
+	arm64 := m.BuildImage(dagger.Platform("linux/arm64"))
 
 	registry := getRegistryFromImageRepo(repo)
 
@@ -417,19 +323,6 @@ func (m *Ci) PushImage(
 
 // Run development server
 func (m *Ci) RunDevServer(
-	// +defaultPath="/"
-	// +ignore=[
-	//   "*",
-	//   "!**/*.go",
-	//   "!go.sum",
-	//   "!go.mod",
-	//   "!package.json",
-	//   "!package-lock.json",
-	//   "!assets/",
-	//   "!migrations/",
-	//   "!templates/"
-	// ]
-	src *dagger.Directory,
 	// +optional
 	// +default=8080
 	port int,
@@ -448,6 +341,7 @@ func (m *Ci) RunDevServer(
 	dbName := "devdb"
 	db := m.PostgresService("18", dbUser, dbPassword, dbName)
 
+	src := m.Source
 	env := m.goEnv(m.srcWithCSS(src)).
 		WithServiceBinding("db", db).
 		WithEnvVariable("DB_DSN", fmt.Sprintf("postgres://%s:%s@db:5432/%s?sslmode=disable", dbUser, dbPassword, dbName)).
