@@ -36,7 +36,7 @@ jobs:
     outputs:
       app_version: ${{ steps.metadata.outputs.app_version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-tags: true
           fetch-depth: 0
@@ -53,7 +53,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/dagger-setup
 
       - name: Run golangci-lint
@@ -84,7 +84,7 @@ jobs:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/dagger-setup
 
       - name: Build Go binary (${{ matrix.os }}/${{ matrix.arch }})
@@ -105,7 +105,7 @@ jobs:
     env:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/dagger-setup
 
       - name: Export OCI tarball
@@ -132,7 +132,7 @@ jobs:
       APP_VERSION: ${{ needs.metadata.outputs.app_version }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/dagger-setup
 
       - name: Push image
@@ -159,7 +159,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
